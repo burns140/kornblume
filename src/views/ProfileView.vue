@@ -2,7 +2,7 @@
 import { ref } from 'vue'
 import { exportKornblumeData, importKornblumeData, resetKornblumeData, setKornblumeData } from '@/utils';
 import { usePullsRecordStore } from '@/stores/pullsRecordStore';
-import { GApiSvc, syncDrive } from '@/composables/gApi';
+import { GApiSvc } from '@/composables/gApi';
 
 const fileInput = ref<HTMLElement>(null!);
 const isGapiReady = ref(false);
@@ -62,7 +62,6 @@ const signOutGoogleDrive = () => {
 GApiSvc.init().then(async () => {
     isGapiReady.value = true;
     isSignedIn.value = await GApiSvc.isSignedIn();
-    syncDrive();
 });
 
 </script>

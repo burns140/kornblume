@@ -7,6 +7,9 @@ const isLoading = ref(false);
 const error = ref(false);
 const subscriberCount = ref(0);
 
+let isSyncing = false;
+let syncDebounceTimer: ReturnType<typeof setTimeout> | null = null;
+
 const createScriptTag = (url) => {
     const scriptTag = document.createElement('script');
     scriptTag.src = url;
@@ -54,11 +57,15 @@ export function useGapi () {
 }
 
 export class GApiSvc {
+    private static _initPromise: Promise<void> | null = null;
+
     static init () {
+        if (GApiSvc._initPromise) return GApiSvc._initPromise;
+
         const { scriptLoaded } = useGapi();
         // console.log('init scriptLoaded:' + scriptLoaded.value);
 
-        return new Promise<void>((resolve, reject) => {
+        GApiSvc._initPromise = new Promise<void>((resolve, reject) => {
             if (!import.meta.env.VITE_GOOGLE_CLIENT_ID) {
                 // If client ID is not set, resolve without initializing GApi.
                 return resolve();
@@ -81,6 +88,8 @@ export class GApiSvc {
                 }
             });
         });
+
+        return GApiSvc._initPromise;
     }
 
     static async signIn () {
@@ -192,29 +201,73 @@ export class GApiSvc {
 }
 
 export async function syncDrive () {
-    if (await GApiSvc.isSignedIn()) {
-        // console.log(GApiSvc.isSignedIn());
+    // cancel any pending debounced sync
+    if (syncDebounceTimer) {
+        clearTimeout(syncDebounceTimer);
+        syncDebounceTimer = null;
+    }
+
+    // prevent concurrent syncs
+    if (isSyncing) return;
+    isSyncing = true;
+
+    try {
+        if (!(await GApiSvc.isSignedIn())) return;
+
         const files = await GApiSvc.getFiles();
-        // console.log(files);
+        if (!files) return;
+
         const file = files.find((file: { name: string; }) => file.name === 'kornblume.json');
         if (!file) {
             // If 'kornblume.json' doesn't exist, create it with the data from localStorage
-            GApiSvc.createFile('kornblume.json', JSON.stringify(localStorage));
+            await GApiSvc.createFile('kornblume.json', JSON.stringify(localStorage));
         } else {
-            // If 'kornblume.json' does exist, download it
-            const driveData = GApiSvc.downloadFile(file.id);
-            const actualDriveData = await driveData;
-            const localDataLastModified = new Date(localStorage.getItem('lastModified') ?? '0');
-            const actualDriveDataLastModified = new Date(actualDriveData.lastModified);
-            if (localDataLastModified < actualDriveDataLastModified) {
-                console.log('drive is newer. updating local data')
+            // download drive data first to compare
+            const actualDriveData = await GApiSvc.downloadFile(file.id);
+            if (!actualDriveData) return;
+
+            const localLastModified = localStorage.getItem('lastModified');
+            const localDataLastModified = localLastModified
+                ? new Date(localLastModified)
+                : new Date(0); 
+
+            const driveLastModified = actualDriveData.lastModified;
+            const actualDriveDataLastModified = driveLastModified
+                ? new Date(driveLastModified)
+                : new Date(0);
+
+            // if local timestamp is invalid/missing, prefer drive data
+            if (
+                isNaN(localDataLastModified.getTime()) ||
+                localDataLastModified < actualDriveDataLastModified
+            ) {
+                console.log('drive is newer. updating local data');
                 setKornblumeData(actualDriveData);
                 localStorage.setItem('lastModified', actualDriveData.lastModified);
                 setTimeout(() => window.location.reload());
-            } else {
-                console.log('local is newer. updating drive data')
-                GApiSvc.updateFile(file.id, JSON.stringify(localStorage));
+            } else if (localDataLastModified > actualDriveDataLastModified) {
+                console.log('local is newer. updating drive data');
+                await GApiSvc.updateFile(file.id, JSON.stringify(localStorage));
             }
+            // if timestamps are equal, no sync needed
         }
+    } catch (err) {
+        console.error('syncDrive error:', err);
+    } finally {
+        isSyncing = false;
     }
+}
+
+/**
+ * Schedule a debounced sync to Google Drive.
+ * Coalesces multiple rapid changes into a single sync call.
+ */
+export function scheduleSyncDrive (delayMs = 3000) {
+    if (syncDebounceTimer) {
+        clearTimeout(syncDebounceTimer);
+    }
+    syncDebounceTimer = setTimeout(() => {
+        syncDebounceTimer = null;
+        syncDrive();
+    }, delayMs);
 }

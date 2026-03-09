@@ -10,7 +10,7 @@ import {
   preprocess1,
   preprocess2
 } from '@/composables/preprocess';
-import { GApiSvc, syncDrive } from '@/composables/gApi';
+import { syncDrive } from '@/composables/gApi';
 import Tesseract, { createWorker } from 'tesseract.js';
 import Fuse, { FuseResult } from 'fuse.js';
 import TrackerBoard from '@/components/tracker/TrackerBoard.vue';
@@ -416,10 +416,6 @@ onMounted(() => {
     }
     changelogsStore.setIsOpenTutorial(true);
   }
-});
-
-GApiSvc.init().then(async () => {
-  syncDrive();
 });
 
 const selectBannerType = (bannerType: string) => {

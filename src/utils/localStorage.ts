@@ -17,7 +17,7 @@ const localStorageKeys = [
     'locale'
 ];
 
-export function setGlobalLastModifiedTimestamp () {
+export function setGlobalLastModifiedTimestamp (onUpdate?: () => void) {
     const plannerStore = usePlannerStore();
     const plannerSettingsStore = usePlannerSettingsStore();
     const wildernessStore = useWildernessStore();
@@ -27,6 +27,7 @@ export function setGlobalLastModifiedTimestamp () {
 
     const updateTimestamp = () => {
         localStorage.setItem('lastModified', new Date().toISOString());
+        onUpdate?.();
     };
 
     watch(() => plannerStore.$state, updateTimestamp, { deep: true });
