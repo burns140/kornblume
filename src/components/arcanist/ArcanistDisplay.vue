@@ -238,16 +238,13 @@ onBeforeMount(() => {
                     </button>
                 </div>
                 <div class="mt-4 rounded-lg border border-slate-700 bg-slate-900/60 p-4 text-sm text-slate-200">
-                    <div v-if="(ownership?.isOwned ?? false)" class="mb-3 flex flex-wrap items-center gap-2">
+                    <div class="mb-3 flex flex-wrap items-center gap-2">
                         <span class="rounded-full border border-slate-600 px-2 py-1 text-xs uppercase tracking-wide text-slate-300">
-                            Ownership: {{ ownershipSource }}
+                            Ownership: {{ ownership?.isOwned ? ownershipSource : 'NONE' }}
                         </span>
-                        <span v-if="ownershipSource === 'manual'" class="text-xs text-emerald-400">You set this manually.</span>
-                        <span v-else-if="ownershipSource === 'tracker'" class="text-xs text-sky-400">Pulled from summon tracker data.</span>
-                        <span v-else class="text-xs text-slate-400">No ownership data yet.</span>
-                    </div>
-                    <div v-else class="mb-3 text-xs text-slate-400">
-                        Ownership is not marked as present.
+                        <span v-if="ownership?.isOwned && ownershipSource === 'manual'" class="text-xs text-emerald-400">You set this manually.</span>
+                        <span v-else-if="ownership?.isOwned && ownershipSource === 'tracker'" class="text-xs text-sky-400">Pulled from summon tracker data.</span>
+                        <span v-else class="text-xs text-slate-400">Ownership is not marked as present.</span>
                     </div>
                     <div class="flex flex-col gap-3">
                         <label class="flex items-center gap-2">
