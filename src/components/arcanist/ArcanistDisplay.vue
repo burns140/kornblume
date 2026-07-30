@@ -74,8 +74,3 @@ watch(
     </div>
 </template>
 
-<style scoped>
-button:disabled {
-    opacity: 0.25;
-}
-</style>
