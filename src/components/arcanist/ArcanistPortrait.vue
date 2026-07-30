@@ -17,6 +17,7 @@ const props = defineProps({
 });
 
 const ownershipStore = useArcanistOwnershipStore();
+const effectiveOwnership = computed(() => ownershipStore.getEffectiveEntry(props.arcanist.Id));
 const ownershipSource = computed<OwnershipSource>(() => {
     const manualEntry = ownershipStore.getManualEntry(props.arcanist.Id);
     if (manualEntry) {
@@ -31,6 +32,19 @@ const ownershipSource = computed<OwnershipSource>(() => {
     return "none";
 });
 
+const ownershipTooltip = computed(() => {
+    if (ownershipSource.value === 'manual') return 'Manual';
+    if (ownershipSource.value === 'tracker') return 'Tracker';
+    return '';
+});
+
+const displayPortraitCount = computed(() => {
+    if (ownershipSource.value === 'manual') {
+        return effectiveOwnership.value?.currentPortrait ?? 0;
+    }
+    return props.count >= 0 ? props.count : null;
+});
+
 </script>
 
 <template>
@@ -42,11 +56,13 @@ const ownershipSource = computed<OwnershipSource>(() => {
             <div
                 class="overlay absolute inset-0 bg-gray-500 opacity-0 group-hover:opacity-50 transition-opacity duration-300">
             </div>
-            <span v-if="count >= 0"
-                class="absolute top-0.5 right-1.5 w-auto px-1 text-center text-sm font-bold text-white/90 bg-opacity-50 rounded-md bg-black">
+            <span v-if="displayPortraitCount !== null"
+                style="position: absolute;"
+                class="top-0.5 right-1.5 w-auto px-1 text-center text-sm font-bold text-white/90 bg-opacity-50 rounded-md bg-black"
+                :title="ownershipTooltip">
                 <i18n-t keypath='P{portrait}'>
                     <template #portrait>
-                        <span> {{ props.count }}</span>
+                        <span>{{ displayPortraitCount }}</span>
                     </template>
                 </i18n-t>
             </span>
@@ -56,16 +72,6 @@ const ownershipSource = computed<OwnershipSource>(() => {
                 alt="">
             <span class="absolute bottom-0 w-16 sm:w-20 text-center text-white/90 py-2.5 text-shadow font-bold opacity-95"> {{
                 $t(props.arcanist.Name) }} </span>
-            <div v-if="ownershipSource !== 'none'"
-                class="absolute right-1.5 top-1.5 z-20 group/ownership">
-                <div class="flex h-6 w-6 items-center justify-center rounded-full border border-white/70 text-white shadow-md"
-                    :class="ownershipSource === 'manual' ? 'bg-emerald-600/80' : 'bg-sky-600/80'">
-                    <i class="fa-solid fa-check text-[12px]"></i>
-                </div>
-                <span class="pointer-events-none absolute right-full top-1/2 mr-1 -translate-y-1/2 whitespace-nowrap rounded bg-black/80 px-2 py-1 text-[10px] text-white opacity-0 transition-opacity duration-200 group-hover/ownership:opacity-100">
-                    {{ ownershipSource === 'manual' ? 'Manual' : 'Tracker' }}
-                </span>
-            </div>
         </div>
     </div>
 </template>
