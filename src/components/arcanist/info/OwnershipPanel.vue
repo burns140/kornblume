@@ -29,12 +29,13 @@ const clampResonance = (insight: number, resonance: number) => {
     return Math.min(insightMaxResonance[insight] ?? 15, Math.max(1, resonance));
 };
 
-const parseResonanceInput = (rawValue: string | number) => {
-    if (typeof rawValue === 'string') {
-        if (rawValue.trim() === '') return 1;
-        return Number(rawValue);
-    }
-    return rawValue;
+const parseAndClamp = (rawValue: string | number, insight: number, fallback: number, clamp: (insight: number, value: number) => number) => {
+    const parsedValue = typeof rawValue === 'string'
+        ? (rawValue.trim() === '' ? fallback : Number(rawValue.trim()))
+        : rawValue;
+
+    const nextValue = Number.isFinite(parsedValue) ? parsedValue : fallback;
+    return clamp(insight, nextValue);
 };
 
 const applyOwnershipUpdate = (updates: Partial<IArcanistOwnershipEntry>) => {
@@ -75,11 +76,6 @@ const setOwned = (value: boolean) => {
     ownershipStore.setOwned(props.arcanist.Id, props.arcanist.Name);
 };
 
-const setCurrentLevel = (value: number) => {
-    const insight = effectiveEntry.value?.insight ?? 0;
-    applyOwnershipUpdate({ level: clampLevel(insight, value) });
-};
-
 const setCurrentInsight = (value: number) => {
     const rawDraftLevel = draftLevel.value.trim();
     const parsedDraftLevel = rawDraftLevel === '' ? NaN : Number(rawDraftLevel);
@@ -93,13 +89,6 @@ const setCurrentInsight = (value: number) => {
         resonance: nextResonance,
     });
     draftLevel.value = String(nextLevel);
-};
-
-const setCurrentResonance = (rawValue: string | number) => {
-    const insight = effectiveEntry.value?.insight ?? 0;
-    const parsedValue = parseResonanceInput(rawValue);
-    const nextValue = Number.isFinite(parsedValue) ? parsedValue : 1;
-    applyOwnershipUpdate({ resonance: clampResonance(insight, nextValue) });
 };
 
 const setCurrentPortrait = (value: number) => {
@@ -147,13 +136,11 @@ const startResonanceEdit = () => {
 
 const commitResonanceEdit = (event: Event) => {
     const target = event.target as HTMLInputElement;
-    const rawValue = target.value.trim();
-    const parsedValue = rawValue === '' ? 1 : Number(rawValue);
     const insight = effectiveEntry.value?.insight ?? 0;
-    const nextValue = Number.isFinite(parsedValue) ? clampResonance(insight, parsedValue) : clampResonance(insight, 1);
+    const nextValue = parseAndClamp(target.value, insight, 1, clampResonance);
 
     draftResonance.value = String(nextValue);
-    setCurrentResonance(nextValue);
+    applyOwnershipUpdate({ resonance: nextValue });
 };
 
 const handleResonanceKeydown = (event: KeyboardEvent) => {
@@ -164,13 +151,11 @@ const handleResonanceKeydown = (event: KeyboardEvent) => {
 
 const commitLevelEdit = (event: Event) => {
     const target = event.target as HTMLInputElement;
-    const rawValue = target.value.trim();
-    const parsedValue = rawValue === '' ? 1 : Number(rawValue);
     const insight = effectiveEntry.value?.insight ?? 0;
-    const nextValue = Number.isFinite(parsedValue) ? clampLevel(insight, parsedValue) : clampLevel(insight, 1);
+    const nextValue = parseAndClamp(target.value, insight, 1, clampLevel);
 
     draftLevel.value = String(nextValue);
-    setCurrentLevel(nextValue);
+    applyOwnershipUpdate({ level: nextValue });
 };
 
 const handleLevelKeydown = (event: KeyboardEvent) => {
