@@ -3,7 +3,6 @@ import { ref, computed } from 'vue';
 import { IArcanist } from '@/types';
 import { useI18n } from 'vue-i18n';
 import { useDataStore } from '@/stores/dataStore';
-import { usePullsRecordStore } from '@/stores/pullsRecordStore';
 import { formatArcanists } from '@/composables/arcanists';
 import { getAfflatusList } from '@/composables/images';
 import { usePlannerSettingsStore } from '@/stores/plannerSettingsStore';
@@ -18,7 +17,6 @@ const searchQuery = ref('');
 const activeRarities = ref<number[]>([]);
 const activeAfflatus = ref<string[]>([]);
 const ownershipStore = useArcanistOwnershipStore();
-const pullsStore = usePullsRecordStore();
 
 const selectedRarities = (rarity: number) => {
   if (activeRarities.value.includes(rarity)) {
@@ -35,13 +33,6 @@ const selectedAfflatus = (afflatus: string) => {
     activeAfflatus.value.push(afflatus);
   }
 };
-
-const portraitCounts = computed(() => {
-  return listArcanists.value.map((arc) => ({
-    ArcanistName: arc.Name,
-    count: pullsStore.data.filter((pull) => pull.ArcanistName === arc.Name).length - 1
-  }));
-});
 
 const filteredArcanists = computed(() => {
   let filtered = listArcanists.value;
@@ -191,9 +182,7 @@ const filteredArcanists = computed(() => {
         v-for="arcanist in filteredArcanists"
         :key="arcanist.Id"
         :to="`/arcanist-${arcanist.Id}`">
-        <ArcanistPortrait
-          :arcanist="arcanist"
-          :count="portraitCounts.find((pc) => pc.ArcanistName === arcanist.Name)?.count ?? -1" />
+        <ArcanistPortrait :arcanist="arcanist" />
       </router-link>
     </div>
   </div>

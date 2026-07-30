@@ -3,25 +3,17 @@ import { computed } from 'vue';
 import { getArcanistI0ImagePath, getArcanistFramePath, getArcanistAfflatusIconPath } from '@/composables/images';
 import { IArcanist } from '@/types';
 import { useArcanistOwnershipStore } from '@/stores/arcanistOwnershipStore';
-import type { OwnershipSource } from '@/stores/arcanistOwnershipStore';
 
 const props = defineProps({
     arcanist: {
         type: Object as () => IArcanist,
-        required: true
-    },
-    count: {
-        type: Number,
         required: true
     }
 });
 
 const ownershipStore = useArcanistOwnershipStore();
 const effectiveOwnership = computed(() => ownershipStore.getEffectiveEntry(props.arcanist.Id));
-const ownershipSource = computed<OwnershipSource>(() => {
-    if (!effectiveOwnership.value?.isOwned) return 'none';
-    return effectiveOwnership.value.source;
-});
+const ownershipSource = computed(() => (effectiveOwnership.value?.isOwned ? effectiveOwnership.value.source : 'none'));
 
 const ownershipTooltip = computed(() => {
     if (ownershipSource.value === 'manual') return 'Manual';
@@ -30,13 +22,8 @@ const ownershipTooltip = computed(() => {
 });
 
 const displayPortraitCount = computed(() => {
-    if (!effectiveOwnership.value?.isOwned) {
-        return null;
-    }
-    if (ownershipSource.value === 'manual' || ownershipSource.value === 'tracker') {
-        return effectiveOwnership.value?.currentPortrait ?? (props.count >= 0 ? props.count : null);
-    }
-    return null;
+    if (!effectiveOwnership.value?.isOwned) return null;
+    return effectiveOwnership.value.currentPortrait;
 });
 
 </script>
@@ -51,8 +38,7 @@ const displayPortraitCount = computed(() => {
                 class="overlay absolute inset-0 bg-gray-500 opacity-0 group-hover:opacity-50 transition-opacity duration-300">
             </div>
             <span v-if="displayPortraitCount !== null"
-                style="position: absolute;"
-                class="top-0.5 right-1.5 w-auto px-1 text-center text-sm font-bold text-white/90 bg-opacity-50 rounded-md bg-black"
+                class="absolute top-0.5 right-1.5 w-auto px-1 text-center text-sm font-bold text-white/90 bg-opacity-50 rounded-md bg-black"
                 :title="ownershipTooltip">
                 <i18n-t keypath='P{portrait}'>
                     <template #portrait>
