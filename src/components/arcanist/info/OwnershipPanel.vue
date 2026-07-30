@@ -16,6 +16,12 @@ const isOwnedChecked = computed(() => ownershipSource.value === 'manual');
 const ownershipToggleLabel = computed(() => ownershipSource.value === 'tracker' ? 'Overwrite tracker ownership' : 'Owned');
 const hasEuphoria = computed(() => (props.arcanist?.Euphoria?.length ?? 0) > 0);
 const euphoriaRows = computed(() => Array.from({ length: props.arcanist?.Euphoria?.length ?? 0 }, (_, index) => index));
+const canEnableEuphoria = computed(() => {
+    if (!effectiveEntry.value || ownershipSource.value !== 'manual') {
+        return false;
+    }
+    return (effectiveEntry.value.insight ?? 0) === 3 && (effectiveEntry.value.level ?? 1) >= 30;
+});
 const inputLevel = ref('');
 const inputResonance = ref('');
 
@@ -50,22 +56,63 @@ const applyOwnershipUpdate = (updates: Partial<IArcanistOwnershipEntry>) => {
     });
 };
 
+const getNormalizedEuphoriaState = (insight: number, level: number) => {
+    const currentEuphorias = effectiveEntry.value?.euphorias ?? [];
+    const currentEuphoriaEnabled = effectiveEntry.value?.euphoriasEnabled ?? [];
+    const shouldDisableEuphoria = insight < 3 || level < 30;
+
+    const normalizedEuphoriaEnabled = Array.from(
+        { length: euphoriaRows.value.length },
+        (_, i) => (shouldDisableEuphoria ? false : (currentEuphoriaEnabled[i] ?? false)),
+    );
+    const normalizedEuphorias = Array.from(
+        { length: euphoriaRows.value.length },
+        (_, i) => (normalizedEuphoriaEnabled[i] ? (currentEuphorias[i] ?? 0) : 0),
+    );
+
+    return {
+        normalizedEuphoriaEnabled,
+        normalizedEuphorias,
+    };
+};
+
 const normalizeManualEntryValues = () => {
     if (!effectiveEntry.value || ownershipSource.value !== 'manual') {
         return;
     }
 
+    const currentEuphorias = effectiveEntry.value.euphorias ?? [];
+    const currentEuphoriaEnabled = effectiveEntry.value.euphoriasEnabled ?? [];
     const insight = effectiveEntry.value.insight ?? 0;
     const normalizedLevel = clampLevel(insight, effectiveEntry.value.level ?? 1);
     const normalizedResonance = clampResonance(insight, effectiveEntry.value.resonance ?? 1);
+    const {
+        normalizedEuphoriaEnabled,
+        normalizedEuphorias,
+    } = getNormalizedEuphoriaState(insight, normalizedLevel);
 
-    if (normalizedLevel === effectiveEntry.value.level && normalizedResonance === effectiveEntry.value.resonance) {
+    const euphoriaEnabledChanged = normalizedEuphoriaEnabled.some(
+        (value, i) => value !== (currentEuphoriaEnabled[i] ?? false),
+    ) || normalizedEuphoriaEnabled.length !== currentEuphoriaEnabled.length;
+
+    const euphoriasChanged = normalizedEuphorias.some(
+        (value, i) => value !== (currentEuphorias[i] ?? 0),
+    ) || normalizedEuphorias.length !== currentEuphorias.length;
+
+    if (
+        normalizedLevel === effectiveEntry.value.level
+        && normalizedResonance === effectiveEntry.value.resonance
+        && !euphoriaEnabledChanged
+        && !euphoriasChanged
+    ) {
         return;
     }
 
     applyOwnershipUpdate({
         level: normalizedLevel,
         resonance: normalizedResonance,
+        euphoriasEnabled: normalizedEuphoriaEnabled,
+        euphorias: normalizedEuphorias,
     });
 };
 
@@ -88,11 +135,17 @@ const setCurrentInsight = (value: number) => {
     const preservedLevel = Number.isFinite(enteredLevel) ? enteredLevel : (effectiveEntry.value?.level ?? 1);
     const nextLevel = clampLevel(value, preservedLevel);
     const nextResonance = clampResonance(value, effectiveEntry.value?.resonance ?? 1);
+    const {
+        normalizedEuphoriaEnabled,
+        normalizedEuphorias,
+    } = getNormalizedEuphoriaState(value, nextLevel);
 
     applyOwnershipUpdate({
         insight: value,
         level: nextLevel,
         resonance: nextResonance,
+        euphoriasEnabled: normalizedEuphoriaEnabled,
+        euphorias: normalizedEuphorias,
     });
     inputLevel.value = String(nextLevel);
 };
@@ -102,6 +155,10 @@ const setCurrentPortrait = (value: number) => {
 };
 
 const setCurrentEuphoria = (index: number, value: number) => {
+    if (!canEnableEuphoria.value) {
+        return;
+    }
+
     const current = effectiveEntry.value?.euphorias ?? [];
     const nextEuphoria = Array.from(
         { length: euphoriaRows.value.length },
@@ -124,8 +181,9 @@ const setCurrentEuphoriaEnabled = (index: number, value: boolean) => {
         (_, i) => current[i] ?? 0,
     );
 
-    nextEnabled[index] = value;
-    nextEuphoria[index] = value ? (current[index] ?? 0) : 0;
+    const nextEnabledValue = value && canEnableEuphoria.value;
+    nextEnabled[index] = nextEnabledValue;
+    nextEuphoria[index] = nextEnabledValue ? (current[index] ?? 0) : 0;
     applyOwnershipUpdate({
         euphoriasEnabled: nextEnabled,
         euphorias: nextEuphoria,
@@ -159,9 +217,17 @@ const commitLevelEdit = (event: Event) => {
     const target = event.target as HTMLInputElement;
     const insight = effectiveEntry.value?.insight ?? 0;
     const nextValue = parseAndClamp(target.value, insight, 1, clampLevel);
+    const {
+        normalizedEuphoriaEnabled,
+        normalizedEuphorias,
+    } = getNormalizedEuphoriaState(insight, nextValue);
 
     inputLevel.value = String(nextValue);
-    applyOwnershipUpdate({ level: nextValue });
+    applyOwnershipUpdate({
+        level: nextValue,
+        euphoriasEnabled: normalizedEuphoriaEnabled,
+        euphorias: normalizedEuphorias,
+    });
 };
 
 const handleLevelKeydown = (event: KeyboardEvent) => {
@@ -274,12 +340,13 @@ watch(
                         <input
                             type="checkbox"
                             class="checkbox checkbox-info checkbox-sm"
+                            :disabled="!canEnableEuphoria"
                             :checked="effectiveEntry?.euphoriasEnabled?.[index] ?? false"
                             @change="setCurrentEuphoriaEnabled(index, ($event.target as HTMLInputElement).checked)" />
-                        <span>Euphoria {{ index + 1 }}</span>
+                        <span :class="!canEnableEuphoria ? 'text-slate-500' : ''">Euphoria {{ index + 1 }}</span>
                         <select
                             class="select select-sm w-20 bg-slate-800 text-white"
-                            :disabled="!(effectiveEntry?.euphoriasEnabled?.[index] ?? false)"
+                            :disabled="!canEnableEuphoria || !(effectiveEntry?.euphoriasEnabled?.[index] ?? false)"
                             :value="effectiveEntry?.euphorias?.[index] ?? 0"
                             @change="setCurrentEuphoria(index, Number(($event.target as HTMLSelectElement).value))">
                             <option :value="0">0</option>
