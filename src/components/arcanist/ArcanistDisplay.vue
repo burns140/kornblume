@@ -35,6 +35,8 @@ const ownershipSource = computed<OwnershipSource>(() => {
 });
 
 const isManualOwnershipActive = computed(() => ownership.value?.source === 'manual' && ownership.value?.isOwned === true);
+const hasEuphoria = computed(() => (arcanist.value?.Euphoria?.length ?? 0) > 0);
+const euphoriaRows = computed(() => Array.from({ length: arcanist.value?.Euphoria?.length ?? 0 }, (_, index) => index));
 const draftLevel = ref('');
 const draftResonance = ref('');
 
@@ -99,6 +101,37 @@ const setCurrentResonance = (rawValue: string | number) => {
 
 const setCurrentPortrait = (value: number) => {
     applyOwnershipUpdate({ currentPortrait: value });
+};
+
+const setCurrentEuphoria = (index: number, value: number) => {
+    const current = ownership.value?.currentEuphoria ?? [];
+    const nextEuphoria = Array.from(
+        { length: euphoriaRows.value.length },
+        (_, i) => current[i] ?? 0,
+    );
+    nextEuphoria[index] = value;
+    applyOwnershipUpdate({ currentEuphoria: nextEuphoria });
+};
+
+const setCurrentEuphoriaEnabled = (index: number, value: boolean) => {
+    const currentEnabled = ownership.value?.currentEuphoriaEnabled ?? [];
+    const current = ownership.value?.currentEuphoria ?? [];
+    const nextEnabled = Array.from(
+        { length: euphoriaRows.value.length },
+        (_, i) => currentEnabled[i] ?? false,
+    );
+
+    const nextEuphoria = Array.from(
+        { length: euphoriaRows.value.length },
+        (_, i) => current[i] ?? 0,
+    );
+
+    nextEnabled[index] = value;
+    nextEuphoria[index] = value || 0;
+    applyOwnershipUpdate({
+        currentEuphoriaEnabled: nextEnabled,
+        currentEuphoria: nextEuphoria,
+    });
 };
 
 const startLevelEdit = () => {
@@ -283,6 +316,33 @@ onBeforeMount(() => {
                                     <option :value="5">5</option>
                                 </select>
                             </label>
+                        </div>
+                        <div class="flex flex-col gap-3" v-if="hasEuphoria">
+                            <div
+                                class="flex flex-wrap items-center gap-3"
+                                v-for="index in euphoriaRows"
+                                :key="index">
+                                <label class="flex items-center gap-2">
+                                    <input
+                                        type="checkbox"
+                                        class="checkbox checkbox-info checkbox-sm"
+                                        :disabled="!isManualOwnershipActive"
+                                        :checked="ownership?.currentEuphoriaEnabled?.[index] ?? false"
+                                        @change="setCurrentEuphoriaEnabled(index, ($event.target as HTMLInputElement).checked)" />
+                                    <span>Euphoria {{ index + 1 }}</span>
+                                    <select
+                                        class="select select-sm w-20 bg-slate-800 text-white"
+                                        :disabled="!isManualOwnershipActive || !(ownership?.currentEuphoriaEnabled?.[index] ?? false)"
+                                        :value="ownership?.currentEuphoria?.[index] ?? 0"
+                                        @change="setCurrentEuphoria(index, Number(($event.target as HTMLSelectElement).value))">
+                                        <option :value="0">0</option>
+                                        <option :value="1">1</option>
+                                        <option :value="2">2</option>
+                                        <option :value="3">3</option>
+                                        <option :value="4">4</option>
+                                    </select>
+                                </label>
+                            </div>
                         </div>
                     </div>
                 </div>

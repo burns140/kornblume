@@ -10,6 +10,8 @@ export interface IArcanistOwnershipEntry {
   currentInsight: number;
   currentResonance: number;
   currentPortrait: number;
+  currentEuphoria: number[];
+  currentEuphoriaEnabled: boolean[];
   source: OwnershipSource;
 }
 
@@ -75,6 +77,8 @@ export const useArcanistOwnershipStore = defineStore("arcanistOwnership", {
         currentInsight: 0,
         currentResonance: 0,
         currentPortrait: 0,
+        currentEuphoria: [],
+        currentEuphoriaEnabled: [],
         source: "manual",
       });
     },
@@ -99,6 +103,8 @@ export const useArcanistOwnershipStore = defineStore("arcanistOwnership", {
         currentInsight: 0,
         currentResonance: 0,
         currentPortrait: 0,
+        currentEuphoria: [],
+        currentEuphoriaEnabled: [],
         source: "tracker",
       });
     },
@@ -132,6 +138,16 @@ export const useArcanistOwnershipStore = defineStore("arcanistOwnership", {
           currentInsight: updates.currentInsight ?? 0,
           currentResonance: updates.currentResonance ?? 0,
           currentPortrait: updates.currentPortrait ?? 0,
+          currentEuphoria: Array.isArray(updates.currentEuphoria)
+            ? updates.currentEuphoria
+            : updates.currentEuphoria !== undefined
+              ? [updates.currentEuphoria]
+              : [],
+          currentEuphoriaEnabled: Array.isArray(updates.currentEuphoriaEnabled)
+            ? updates.currentEuphoriaEnabled
+            : updates.currentEuphoriaEnabled !== undefined
+              ? [updates.currentEuphoriaEnabled]
+              : [],
           source: "manual",
         });
         return;
