@@ -1,7 +1,7 @@
 <!-- eslint-disable no-unused-vars -->
 <!-- eslint-disable @typescript-eslint/no-unused-vars -->
 <script setup lang="ts">
-import { ref, computed, onBeforeMount } from 'vue';
+import { ref, computed, watch, onBeforeMount } from 'vue';
 import { useRoute } from 'vue-router';
 import { useDataStore } from '@/stores/dataStore';
 import { useArcanistOwnershipStore, } from '@/stores/arcanistOwnershipStore';
@@ -42,6 +42,19 @@ const clampLevel = (insight: number, level: number) => {
     return Math.min(insightMaxLevels[insight] ?? 60, Math.max(1, level));
 };
 
+const clampResonance = (insight: number, resonance: number) => {
+    const insightMaxResonance = [1, 5, 10, 15];
+    return Math.min(insightMaxResonance[insight] ?? 15, Math.max(1, resonance));
+};
+
+const parseResonanceInput = (rawValue: string | number) => {
+    if (typeof rawValue === 'string') {
+        if (rawValue.trim() === '') return 1;
+        return Number(rawValue);
+    }
+    return rawValue;
+};
+
 const applyOwnershipUpdate = (updates: Partial<IArcanistOwnershipEntry>) => {
     if (!arcanist.value) return;
 
@@ -66,15 +79,21 @@ const setCurrentInsight = (value: number) => {
     const parsedDraftLevel = rawDraftLevel === '' ? NaN : Number(rawDraftLevel);
     const currentLevel = Number.isFinite(parsedDraftLevel) ? parsedDraftLevel : (ownership.value?.currentLevel ?? 1);
     const nextLevel = clampLevel(value, currentLevel);
+    const currentResonance = ownership.value?.currentResonance ?? 1;
+    const nextResonance = clampResonance(value, currentResonance);
     applyOwnershipUpdate({
         currentInsight: value,
         currentLevel: nextLevel,
+        currentResonance: nextResonance,
     });
     draftLevel.value = String(nextLevel);
 };
 
-const setCurrentResonance = (value: number) => {
-    applyOwnershipUpdate({ currentResonance: value });
+const setCurrentResonance = (rawValue: string | number) => {
+    const insight = ownership.value?.currentInsight ?? 0;
+    const parsedValue = parseResonanceInput(rawValue);
+    const nextValue = Number.isFinite(parsedValue) ? parsedValue : 1;
+    applyOwnershipUpdate({ currentResonance: clampResonance(insight, nextValue) });
 };
 
 const setCurrentPortrait = (value: number) => {
@@ -104,8 +123,25 @@ const handleLevelKeydown = (event: KeyboardEvent) => {
     }
 };
 
+watch(
+    ownership,
+    (newOwnership) => {
+        draftLevel.value = String(newOwnership?.currentLevel ?? 1);
+        if (newOwnership && newOwnership.currentResonance < 1) {
+            const insight = newOwnership.currentInsight ?? 0;
+            applyOwnershipUpdate({ currentResonance: clampResonance(insight, newOwnership.currentResonance) });
+        }
+    },
+    { immediate: true }
+);
+
 onBeforeMount(() => {
     arcanist.value = arcanistStore.find(arc => arc.Id === Number(route.params.id)) || arcanistStore[0];
+    draftLevel.value = String(ownership.value?.currentLevel ?? 1);
+    if (ownership.value && ownership.value.currentResonance < 1) {
+        const insight = ownership.value.currentInsight ?? 0;
+        applyOwnershipUpdate({ currentResonance: clampResonance(insight, ownership.value.currentResonance) });
+    }
 });
 
 </script>
@@ -195,12 +231,12 @@ onBeforeMount(() => {
                                 <span>Resonance</span>
                                 <input
                                     type="number"
-                                    min="0"
-                                    max="3"
+                                    min="1"
+                                    :max="ownership?.currentInsight === 0 ? 1 : ownership?.currentInsight === 1 ? 5 : ownership?.currentInsight === 2 ? 10 : 15"
                                     class="input input-sm w-20 bg-slate-800 text-white"
                                     :disabled="!isManualOwnershipActive"
-                                    :value="ownership?.currentResonance ?? 0"
-                                    @input="setCurrentResonance(Number(($event.target as HTMLInputElement).value))" />
+                                    :value="ownership?.currentResonance ?? 1"
+                                    @input="setCurrentResonance(($event.target as HTMLInputElement).value)" />
                             </label>
                             <label class="flex items-center gap-2">
                                 <span>Portrait</span>
