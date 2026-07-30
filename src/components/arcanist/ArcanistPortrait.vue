@@ -17,8 +17,12 @@ const effectiveOwnership = computed<IArcanistOwnershipEntry | undefined>(() => o
 const ownershipSource = computed<OwnershipSource>(() => (effectiveOwnership.value ? effectiveOwnership.value.source : 'none'));
 
 const ownershipTooltip = computed(() => {
-    if (ownershipSource.value === 'manual') return 'Manual';
-    if (ownershipSource.value === 'tracker') return 'Tracker';
+    if (ownershipSource.value === 'manual') {
+        return 'Manual';
+    }
+    if (ownershipSource.value === 'tracker') {
+        return 'Tracker';
+    }
     return '';
 });
 

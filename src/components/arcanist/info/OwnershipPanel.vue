@@ -39,7 +39,9 @@ const parseAndClamp = (rawValue: string | number, insight: number, fallback: num
 };
 
 const applyOwnershipUpdate = (updates: Partial<IArcanistOwnershipEntry>) => {
-    if (!props.arcanist) return;
+    if (!props.arcanist) {
+        return;
+    }
 
     ownershipStore.updateEntry(props.arcanist.Id, {
         Id: props.arcanist.Id,
@@ -49,7 +51,9 @@ const applyOwnershipUpdate = (updates: Partial<IArcanistOwnershipEntry>) => {
 };
 
 const normalizeManualEntryValues = () => {
-    if (!effectiveEntry.value || ownershipSource.value !== 'manual') return;
+    if (!effectiveEntry.value || ownershipSource.value !== 'manual') {
+        return;
+    }
 
     const insight = effectiveEntry.value.insight ?? 0;
     const normalizedLevel = clampLevel(insight, effectiveEntry.value.level ?? 1);
@@ -66,7 +70,9 @@ const normalizeManualEntryValues = () => {
 };
 
 const setOwned = (value: boolean) => {
-    if (!props.arcanist) return;
+    if (!props.arcanist) {
+        return;
+    }
 
     if (!value) {
         ownershipStore.removeEntry(props.arcanist.Id);
@@ -77,12 +83,12 @@ const setOwned = (value: boolean) => {
 };
 
 const setCurrentInsight = (value: number) => {
-    const rawDraftLevel = draftLevel.value.trim();
-    const parsedDraftLevel = rawDraftLevel === '' ? NaN : Number(rawDraftLevel);
-    const currentLevel = Number.isFinite(parsedDraftLevel) ? parsedDraftLevel : (effectiveEntry.value?.level ?? 1);
-    const nextLevel = clampLevel(value, currentLevel);
-    const currentResonance = effectiveEntry.value?.resonance ?? 1;
-    const nextResonance = clampResonance(value, currentResonance);
+    const draftLevelText = draftLevel.value.trim();
+    const enteredLevel = draftLevelText === '' ? NaN : Number(draftLevelText);
+    const preservedLevel = Number.isFinite(enteredLevel) ? enteredLevel : (effectiveEntry.value?.level ?? 1);
+    const nextLevel = clampLevel(value, preservedLevel);
+    const nextResonance = clampResonance(value, effectiveEntry.value?.resonance ?? 1);
+
     applyOwnershipUpdate({
         insight: value,
         level: nextLevel,
