@@ -36,6 +36,7 @@ const ownershipSource = computed<OwnershipSource>(() => {
 
 const isManualOwnershipActive = computed(() => ownership.value?.source === 'manual' && ownership.value?.isOwned === true);
 const draftLevel = ref('');
+const draftResonance = ref('');
 
 const clampLevel = (insight: number, level: number) => {
     const insightMaxLevels = [30, 40, 50, 60];
@@ -104,6 +105,29 @@ const startLevelEdit = () => {
     draftLevel.value = String(ownership.value?.currentLevel ?? 1);
 };
 
+const startResonanceEdit = () => {
+    draftResonance.value = String(ownership.value?.currentResonance ?? 1);
+};
+
+const commitResonanceEdit = (event: Event) => {
+    if (!arcanist.value) return;
+
+    const target = event.target as HTMLInputElement;
+    const rawValue = target.value.trim();
+    const parsedValue = rawValue === '' ? 1 : Number(rawValue);
+    const insight = ownership.value?.currentInsight ?? 0;
+    const nextValue = Number.isFinite(parsedValue) ? clampResonance(insight, parsedValue) : clampResonance(insight, 1);
+
+    draftResonance.value = String(nextValue);
+    setCurrentResonance(nextValue);
+};
+
+const handleResonanceKeydown = (event: KeyboardEvent) => {
+    if (event.key === 'Enter') {
+        (event.target as HTMLInputElement).blur();
+    }
+};
+
 const commitLevelEdit = (event: Event) => {
     if (!arcanist.value) return;
 
@@ -127,6 +151,7 @@ watch(
     ownership,
     (newOwnership) => {
         draftLevel.value = String(newOwnership?.currentLevel ?? 1);
+        draftResonance.value = String(newOwnership?.currentResonance ?? 1);
         if (newOwnership && newOwnership.currentResonance < 1) {
             const insight = newOwnership.currentInsight ?? 0;
             applyOwnershipUpdate({ currentResonance: clampResonance(insight, newOwnership.currentResonance) });
@@ -138,6 +163,7 @@ watch(
 onBeforeMount(() => {
     arcanist.value = arcanistStore.find(arc => arc.Id === Number(route.params.id)) || arcanistStore[0];
     draftLevel.value = String(ownership.value?.currentLevel ?? 1);
+    draftResonance.value = String(ownership.value?.currentResonance ?? 1);
     if (ownership.value && ownership.value.currentResonance < 1) {
         const insight = ownership.value.currentInsight ?? 0;
         applyOwnershipUpdate({ currentResonance: clampResonance(insight, ownership.value.currentResonance) });
@@ -235,8 +261,12 @@ onBeforeMount(() => {
                                     :max="ownership?.currentInsight === 0 ? 1 : ownership?.currentInsight === 1 ? 5 : ownership?.currentInsight === 2 ? 10 : 15"
                                     class="input input-sm w-20 bg-slate-800 text-white"
                                     :disabled="!isManualOwnershipActive"
-                                    :value="ownership?.currentResonance ?? 1"
-                                    @input="setCurrentResonance(($event.target as HTMLInputElement).value)" />
+                                    :value="draftResonance"
+                                    @focus="startResonanceEdit"
+                                    @input="draftResonance = ($event.target as HTMLInputElement).value"
+                                    @change="commitResonanceEdit($event)"
+                                    @blur="commitResonanceEdit($event)"
+                                    @keydown="handleResonanceKeydown($event)" />
                             </label>
                             <label class="flex items-center gap-2">
                                 <span>Portrait</span>
