@@ -7,7 +7,6 @@ export type OwnershipSource = "manual" | "tracker" | "none";
 export interface IArcanistOwnershipEntry {
   Id: number;
   Name: string;
-  isOwned: boolean;
   level: number;
   insight: number;
   resonance: number;
@@ -26,10 +25,8 @@ export const useArcanistOwnershipStore = defineStore("arcanistOwnership", {
     entries: [],
   }),
   getters: {
-    ownedIds: (state) =>
-      state.entries.filter((entry) => entry.isOwned).map((entry) => entry.Id),
-    getOwnedArcanists: (state) =>
-      state.entries.filter((entry) => entry.isOwned),
+    ownedIds: (state) => state.entries.map((entry) => entry.Id),
+    getOwnedArcanists: (state) => state.entries,
   },
   actions: {
     getEntry(id: number): IArcanistOwnershipEntry | undefined {
@@ -54,7 +51,6 @@ export const useArcanistOwnershipStore = defineStore("arcanistOwnership", {
       return {
         Id: id,
         Name: arcanist.Name,
-        isOwned: true,
         level: 1,
         insight: 0,
         resonance: 1,
@@ -77,23 +73,14 @@ export const useArcanistOwnershipStore = defineStore("arcanistOwnership", {
 
       return this.getTrackerEntry(id);
     },
-    setOwned(id: number, name: string, isOwned: boolean) {
-      const existing = this.entries.find(
-        (entry) => entry.Id === id && entry.source === "manual",
-      );
-      if (existing) {
-        existing.isOwned = isOwned;
-        existing.Name = name;
-        return;
-      }
-
+    setOwned(id: number, name: string) {
       this.entries = this.entries.filter(
         (entry) => entry.Id !== id || entry.source !== "manual",
       );
+
       this.entries.push({
         Id: id,
         Name: name,
-        isOwned,
         level: 1,
         insight: 0,
         resonance: 1,
@@ -121,6 +108,7 @@ export const useArcanistOwnershipStore = defineStore("arcanistOwnership", {
       const existing = this.entries.find(
         (entry) => entry.Id === id && entry.source === "manual",
       );
+
       if (!existing) {
         this.entries = this.entries.filter(
           (entry) => entry.Id !== id || entry.source !== "manual",
@@ -128,7 +116,6 @@ export const useArcanistOwnershipStore = defineStore("arcanistOwnership", {
         this.entries.push({
           Id: id,
           Name: updates.Name ?? "",
-          isOwned: updates.isOwned ?? false,
           level: updates.level ?? 1,
           insight: updates.insight ?? 0,
           resonance: updates.resonance ?? 1,

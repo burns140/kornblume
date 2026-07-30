@@ -60,7 +60,7 @@ const filteredArcanists = computed(() => {
   if (usePlannerSettingsStore().settings.showOwnedArcanists) {
     filtered = filtered.filter((arc) => {
       const ownership = ownershipStore.getEffectiveEntry(arc.Id);
-      return ownership?.isOwned ?? false;
+      return !!ownership;
     });
   }
 

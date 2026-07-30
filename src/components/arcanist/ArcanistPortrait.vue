@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { getArcanistI0ImagePath, getArcanistFramePath, getArcanistAfflatusIconPath } from '@/composables/images';
-import { IArcanist } from '@/types';
+import type { IArcanist } from '@/types';
+import type { OwnershipSource, IArcanistOwnershipEntry } from '@/stores/arcanistOwnershipStore';
 import { useArcanistOwnershipStore } from '@/stores/arcanistOwnershipStore';
 
 const props = defineProps({
@@ -12,8 +13,8 @@ const props = defineProps({
 });
 
 const ownershipStore = useArcanistOwnershipStore();
-const effectiveOwnership = computed(() => ownershipStore.getEffectiveEntry(props.arcanist.Id));
-const ownershipSource = computed(() => (effectiveOwnership.value?.isOwned ? effectiveOwnership.value.source : 'none'));
+const effectiveOwnership = computed<IArcanistOwnershipEntry | undefined>(() => ownershipStore.getEffectiveEntry(props.arcanist.Id));
+const ownershipSource = computed<OwnershipSource>(() => (effectiveOwnership.value ? effectiveOwnership.value.source : 'none'));
 
 const ownershipTooltip = computed(() => {
     if (ownershipSource.value === 'manual') return 'Manual';
@@ -22,8 +23,10 @@ const ownershipTooltip = computed(() => {
 });
 
 const displayPortraitCount = computed(() => {
-    if (!effectiveOwnership.value?.isOwned) return null;
-    return effectiveOwnership.value.currentPortrait;
+    if (!effectiveOwnership.value) {
+        return null;
+    }
+    return effectiveOwnership.value.portrait;
 });
 
 </script>

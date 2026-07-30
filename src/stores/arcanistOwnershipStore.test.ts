@@ -10,7 +10,7 @@ describe("useArcanistOwnershipStore", () => {
     setActivePinia(createPinia());
   });
 
-  it("prefers manual ownership over tracker-derived ownership", () => {
+  it("treats a manual entry as ownership and removes it when unchecked", () => {
     const store = useArcanistOwnershipStore();
     const pullsStore = usePullsRecordStore();
     const dataStore = useDataStore();
@@ -32,15 +32,16 @@ describe("useArcanistOwnershipStore", () => {
     ];
     pullsStore.updatePullsRecord(pulls);
 
-    const trackerEntry = store.getTrackerEntry(1);
-    expect(trackerEntry?.isOwned).toBe(true);
-    expect(trackerEntry?.source).toBe("tracker");
-    expect(trackerEntry?.currentPortrait).toBe(0);
+    store.setOwned(1, "Test Arcanist");
 
-    store.setOwned(1, "Test Arcanist", false);
-    const effectiveEntry = store.getEffectiveEntry(1);
-    expect(effectiveEntry?.isOwned).toBe(false);
-    expect(effectiveEntry?.source).toBe("manual");
-    expect(effectiveEntry?.resonance).toBe(1);
+    const manualEntry = store.getManualEntry(1);
+    expect(manualEntry).toBeDefined();
+    expect(manualEntry).not.toHaveProperty("isOwned");
+    expect(store.getEffectiveEntry(1)?.source).toBe("manual");
+
+    store.removeEntry(1);
+    const trackerEntry = store.getEffectiveEntry(1);
+    expect(trackerEntry?.source).toBe("tracker");
+    expect(trackerEntry?.portrait).toBe(0);
   });
 });
