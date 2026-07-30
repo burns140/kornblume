@@ -9,11 +9,10 @@ const props = defineProps<{
 }>();
 
 const ownershipStore = useArcanistOwnershipStore();
-const manualEntry = computed(() => ownershipStore.getManualEntry(props.arcanist?.Id ?? -1));
 const effectiveEntry = computed(() => ownershipStore.getEffectiveEntry(props.arcanist?.Id ?? -1));
 const ownershipSource = computed<OwnershipSource>(() => effectiveEntry.value?.source ?? 'none');
 
-const isOwnedChecked = computed(() => manualEntry.value !== undefined);
+const isOwnedChecked = computed(() => ownershipSource.value === 'manual');
 const ownershipToggleLabel = computed(() => ownershipSource.value === 'tracker' ? 'Overwrite tracker ownership' : 'Owned');
 const hasEuphoria = computed(() => (props.arcanist?.Euphoria?.length ?? 0) > 0);
 const euphoriaRows = computed(() => Array.from({ length: props.arcanist?.Euphoria?.length ?? 0 }, (_, index) => index));

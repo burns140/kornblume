@@ -34,10 +34,9 @@ describe("useArcanistOwnershipStore", () => {
 
     store.setOwned(1, "Test Arcanist");
 
-    const manualEntry = store.getManualEntry(1);
-    expect(manualEntry).toBeDefined();
-    expect(manualEntry).not.toHaveProperty("isOwned");
-    expect(store.getEffectiveEntry(1)?.source).toBe("manual");
+    const ownershipEntry = store.getEffectiveEntry(1);
+    expect(ownershipEntry).toBeDefined();
+    expect(ownershipEntry?.source).toBe("manual");
 
     store.removeEntry(1);
     const trackerEntry = store.getEffectiveEntry(1);

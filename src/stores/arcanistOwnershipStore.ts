@@ -60,13 +60,10 @@ export const useArcanistOwnershipStore = defineStore("arcanistOwnership", {
         source: "tracker",
       };
     },
-    getManualEntry(id: number): IArcanistOwnershipEntry | undefined {
-      return this.entries.find(
+    getEffectiveEntry(id: number): IArcanistOwnershipEntry | undefined {
+      const manualEntry = this.entries.find(
         (entry) => entry.Id === id && entry.source === "manual",
       );
-    },
-    getEffectiveEntry(id: number): IArcanistOwnershipEntry | undefined {
-      const manualEntry = this.getManualEntry(id);
       if (manualEntry) {
         return manualEntry;
       }
