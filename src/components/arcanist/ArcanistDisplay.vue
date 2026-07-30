@@ -20,19 +20,20 @@ const arcanist = ref<IArcanist>(arcanistStore[0]);
 const buttons = ['Stats', 'Resonance', 'Euphoria'];
 const selectedButton = ref(buttons[0]);
 const ownership = computed(() => ownershipStore.getEffectiveEntry(arcanist.value?.Id ?? -1));
-const ownershipSource = computed(() => {
+const ownershipSource = computed<OwnershipSource>(() => {
     const manualEntry = ownershipStore.getManualEntry(arcanist.value?.Id ?? -1);
     if (manualEntry) {
-        return 'Manual';
+        return 'manual';
     }
 
     const trackerEntry = ownershipStore.getTrackerEntry(arcanist.value?.Id ?? -1);
     if (trackerEntry) {
-        return 'Tracker';
+        return 'tracker';
     }
 
-    return 'None';
+    return 'none';
 });
+
 const isManualOwnershipActive = computed(() => ownership.value?.source === 'manual' && ownership.value?.isOwned === true);
 const draftLevel = ref('');
 
@@ -146,8 +147,8 @@ onBeforeMount(() => {
                         <span class="rounded-full border border-slate-600 px-2 py-1 text-xs uppercase tracking-wide text-slate-300">
                             Ownership: {{ ownershipSource }}
                         </span>
-                        <span v-if="ownershipSource === 'Manual'" class="text-xs text-emerald-400">You set this manually.</span>
-                        <span v-else-if="ownershipSource === 'Tracker'" class="text-xs text-sky-400">Pulled from summon tracker data.</span>
+                        <span v-if="ownershipSource === 'manual'" class="text-xs text-emerald-400">You set this manually.</span>
+                        <span v-else-if="ownershipSource === 'tracker'" class="text-xs text-sky-400">Pulled from summon tracker data.</span>
                         <span v-else class="text-xs text-slate-400">No ownership data yet.</span>
                     </div>
                     <div v-else class="mb-3 text-xs text-slate-400">

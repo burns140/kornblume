@@ -17,18 +17,18 @@ const props = defineProps({
 });
 
 const ownershipStore = useArcanistOwnershipStore();
-const ownershipSource: OwnershipSource = computed(() => {
+const ownershipSource = computed<OwnershipSource>(() => {
     const manualEntry = ownershipStore.getManualEntry(props.arcanist.Id);
     if (manualEntry) {
-        return "Manual";
+        return "manual";
     }
 
     const trackerEntry = ownershipStore.getTrackerEntry(props.arcanist.Id);
     if (trackerEntry) {
-        return "Tracker";
+        return "tracker";
     }
 
-    return "None";
+    return "none";
 });
 
 </script>
