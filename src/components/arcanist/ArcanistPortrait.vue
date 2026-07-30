@@ -1,6 +1,9 @@
 <script setup lang="ts">
+import { computed } from 'vue';
 import { getArcanistI0ImagePath, getArcanistFramePath, getArcanistAfflatusIconPath } from '@/composables/images';
 import { IArcanist } from '@/types';
+import { useArcanistOwnershipStore } from '@/stores/arcanistOwnershipStore';
+import type { OwnershipSource } from '@/stores/arcanistOwnershipStore';
 
 const props = defineProps({
     arcanist: {
@@ -11,6 +14,21 @@ const props = defineProps({
         type: Number,
         required: true
     }
+});
+
+const ownershipStore = useArcanistOwnershipStore();
+const ownershipSource: OwnershipSource = computed(() => {
+    const manualEntry = ownershipStore.getManualEntry(props.arcanist.Id);
+    if (manualEntry) {
+        return "Manual";
+    }
+
+    const trackerEntry = ownershipStore.getTrackerEntry(props.arcanist.Id);
+    if (trackerEntry) {
+        return "Tracker";
+    }
+
+    return "None";
 });
 
 </script>
@@ -38,6 +56,16 @@ const props = defineProps({
                 alt="">
             <span class="absolute bottom-0 w-16 sm:w-20 text-center text-white/90 py-2.5 text-shadow font-bold opacity-95"> {{
                 $t(props.arcanist.Name) }} </span>
+            <div v-if="ownershipSource !== 'none'"
+                class="absolute right-1.5 top-1.5 z-20 group/ownership">
+                <div class="flex h-6 w-6 items-center justify-center rounded-full border border-white/70 text-white shadow-md"
+                    :class="ownershipSource === 'manual' ? 'bg-emerald-600/80' : 'bg-sky-600/80'">
+                    <i class="fa-solid fa-check text-[12px]"></i>
+                </div>
+                <span class="pointer-events-none absolute right-full top-1/2 mr-1 -translate-y-1/2 whitespace-nowrap rounded bg-black/80 px-2 py-1 text-[10px] text-white opacity-0 transition-opacity duration-200 group-hover/ownership:opacity-100">
+                    {{ ownershipSource === 'manual' ? 'Manual' : 'Tracker' }}
+                </span>
+            </div>
         </div>
     </div>
 </template>

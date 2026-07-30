@@ -7,6 +7,7 @@ import { usePullsRecordStore, IPull } from '@/stores/pullsRecordStore';
 import { formatArcanists } from '@/composables/arcanists';
 import { getAfflatusList } from '@/composables/images';
 import { usePlannerSettingsStore } from '@/stores/plannerSettingsStore';
+import { useArcanistOwnershipStore } from '@/stores/arcanistOwnershipStore';
 import ArcanistPortrait from '@/components/arcanist/ArcanistPortrait.vue';
 
 const { locale, t } = useI18n();
@@ -17,6 +18,7 @@ const searchQuery = ref('');
 const pulls = ref<IPull[]>([]);
 const activeRarities = ref<number[]>([]);
 const activeAfflatus = ref<string[]>([]);
+const ownershipStore = useArcanistOwnershipStore();
 
 const selectedRarities = (rarity: number) => {
   if (activeRarities.value.includes(rarity)) {
@@ -66,8 +68,8 @@ const filteredArcanists = computed(() => {
 
   if (usePlannerSettingsStore().settings.showOwnedArcanists) {
     filtered = filtered.filter((arc) => {
-      const count = portraitCounts.value.find((pc) => pc.ArcanistName === arc.Name)?.count ?? -1;
-      return count >= 0;
+      const ownership = ownershipStore.getEffectiveEntry(arc.Id);
+      return ownership?.isOwned ?? false;
     });
   }
 
