@@ -47,11 +47,7 @@ const displayPortraitCount = computed(() => {
             <span v-if="displayPortraitCount !== null"
                 class="absolute top-0.5 right-1.5 w-auto px-1 text-center text-sm font-bold text-white/90 bg-opacity-50 rounded-md bg-black"
                 :title="ownershipTooltip">
-                <i18n-t keypath='P{portrait}'>
-                    <template #portrait>
-                        <span>{{ displayPortraitCount }}</span>
-                    </template>
-                </i18n-t>
+                <span>{{ $t('P{portrait}', { portrait: displayPortraitCount }) }}</span>
             </span>
             <img class="absolute top-0 left-0 w-4 opacity-90" :src="getArcanistAfflatusIconPath(props.arcanist.Afflatus)"
                 alt="">
