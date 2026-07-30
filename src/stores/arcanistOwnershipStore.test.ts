@@ -41,6 +41,6 @@ describe("useArcanistOwnershipStore", () => {
     const effectiveEntry = store.getEffectiveEntry(1);
     expect(effectiveEntry?.isOwned).toBe(false);
     expect(effectiveEntry?.source).toBe("manual");
-    expect(effectiveEntry?.currentResonance).toBe(1);
+    expect(effectiveEntry?.resonance).toBe(1);
   });
 });
