@@ -1,10 +1,10 @@
 <!-- eslint-disable no-unused-vars -->
 <!-- eslint-disable @typescript-eslint/no-unused-vars -->
 <script setup lang="ts">
-import { ref, computed, watch, onBeforeMount } from 'vue';
+import { ref, computed, watch } from 'vue';
 import { useRoute } from 'vue-router';
 import { useDataStore } from '@/stores/dataStore';
-import { useArcanistOwnershipStore, } from '@/stores/arcanistOwnershipStore';
+import { useArcanistOwnershipStore } from '@/stores/arcanistOwnershipStore';
 import { IArcanist } from '@/types'
 import type { IArcanistOwnershipEntry, OwnershipSource } from '@/stores/arcanistOwnershipStore';
 import { getArcanistI2ImagePath, getArcanistAfflatusPath, getAfflatusList, getArcanistDmgTypePath } from '@/composables/images';
@@ -19,22 +19,13 @@ const ownershipStore = useArcanistOwnershipStore();
 const arcanist = ref<IArcanist>(arcanistStore[0]);
 const buttons = ['Stats', 'Resonance', 'Euphoria'];
 const selectedButton = ref(buttons[0]);
+const manualOwnership = computed(() => ownershipStore.getManualEntry(arcanist.value?.Id ?? -1));
 const ownership = computed(() => ownershipStore.getEffectiveEntry(arcanist.value?.Id ?? -1));
-const ownershipSource = computed<OwnershipSource>(() => {
-    const manualEntry = ownershipStore.getManualEntry(arcanist.value?.Id ?? -1);
-    if (manualEntry) {
-        return 'manual';
-    }
+const ownershipSource = computed<OwnershipSource>(() => ownership.value?.source ?? 'none');
 
-    const trackerEntry = ownershipStore.getTrackerEntry(arcanist.value?.Id ?? -1);
-    if (trackerEntry) {
-        return 'tracker';
-    }
-
-    return 'none';
-});
-
-const isManualOwnershipActive = computed(() => ownership.value?.source === 'manual' && ownership.value?.isOwned === true);
+const checkboxIsChecked = computed(() => manualOwnership.value?.isOwned ?? false);
+const isManualOwnershipActive = computed(() => ownershipSource.value === 'manual' && ownership.value?.isOwned === true);
+const ownershipToggleLabel = computed(() => ownershipSource.value === 'tracker' ? 'Overwrite tracker ownership' : 'Owned');
 const hasEuphoria = computed(() => (arcanist.value?.Euphoria?.length ?? 0) > 0);
 const euphoriaRows = computed(() => Array.from({ length: arcanist.value?.Euphoria?.length ?? 0 }, (_, index) => index));
 const draftLevel = ref('');
@@ -69,7 +60,16 @@ const applyOwnershipUpdate = (updates: Partial<IArcanistOwnershipEntry>) => {
 };
 
 const setOwned = (value: boolean) => {
-    applyOwnershipUpdate({ isOwned: value });
+    if (!arcanist.value) return;
+
+    if (!value) {
+        if (manualOwnership.value) {
+            ownershipStore.removeEntry(arcanist.value.Id);
+        }
+        return;
+    }
+
+    ownershipStore.setOwned(arcanist.value.Id, arcanist.value.Name, true);
 };
 
 const setCurrentLevel = (value: number) => {
@@ -127,7 +127,7 @@ const setCurrentEuphoriaEnabled = (index: number, value: boolean) => {
     );
 
     nextEnabled[index] = value;
-    nextEuphoria[index] = value || 0;
+    nextEuphoria[index] = value ? (current[index] ?? 0) : 0;
     applyOwnershipUpdate({
         currentEuphoriaEnabled: nextEnabled,
         currentEuphoria: nextEuphoria,
@@ -180,6 +180,16 @@ const handleLevelKeydown = (event: KeyboardEvent) => {
     }
 };
 
+const initializeArcanist = () => {
+    arcanist.value = arcanistStore.find(arc => arc.Id === Number(route.params.id)) || arcanistStore[0];
+    draftLevel.value = String(ownership.value?.currentLevel ?? 1);
+    draftResonance.value = String(ownership.value?.currentResonance ?? 1);
+    if (ownership.value && ownership.value.currentResonance < 1) {
+        const insight = ownership.value.currentInsight ?? 0;
+        applyOwnershipUpdate({ currentResonance: clampResonance(insight, ownership.value.currentResonance) });
+    }
+};
+
 watch(
     ownership,
     (newOwnership) => {
@@ -193,15 +203,13 @@ watch(
     { immediate: true }
 );
 
-onBeforeMount(() => {
-    arcanist.value = arcanistStore.find(arc => arc.Id === Number(route.params.id)) || arcanistStore[0];
-    draftLevel.value = String(ownership.value?.currentLevel ?? 1);
-    draftResonance.value = String(ownership.value?.currentResonance ?? 1);
-    if (ownership.value && ownership.value.currentResonance < 1) {
-        const insight = ownership.value.currentInsight ?? 0;
-        applyOwnershipUpdate({ currentResonance: clampResonance(insight, ownership.value.currentResonance) });
-    }
-});
+watch(
+    () => route.params.id,
+    () => {
+        initializeArcanist();
+    },
+    { immediate: true }
+);
 
 </script>
 
@@ -243,7 +251,7 @@ onBeforeMount(() => {
                             Ownership: {{ ownership?.isOwned ? ownershipSource : 'NONE' }}
                         </span>
                         <span v-if="ownership?.isOwned && ownershipSource === 'manual'" class="text-xs text-emerald-400">You set this manually.</span>
-                        <span v-else-if="ownership?.isOwned && ownershipSource === 'tracker'" class="text-xs text-sky-400">Pulled from summon tracker data.</span>
+                        <span v-else-if="ownership?.isOwned && ownershipSource === 'tracker'" class="text-xs text-sky-400">Showing ownership from summon tracker.</span>
                         <span v-else class="text-xs text-slate-400">Ownership is not marked as present.</span>
                     </div>
                     <div class="flex flex-col gap-3">
@@ -251,11 +259,11 @@ onBeforeMount(() => {
                             <input
                                 type="checkbox"
                                 class="checkbox checkbox-info checkbox-sm"
-                                :checked="ownership?.isOwned ?? false"
+                                :checked="checkboxIsChecked"
                                 @change="setOwned(($event.target as HTMLInputElement).checked)" />
-                            <span>Owned</span>
+                            <span>{{ ownershipToggleLabel }}</span>
                         </label>
-                        <div class="flex flex-wrap items-center gap-3">
+                        <div v-if="ownershipSource === 'manual' && ownership?.isOwned" class="flex flex-wrap items-center gap-3">
                             <label class="flex items-center gap-2">
                                 <span>Level</span>
                                 <input
@@ -263,7 +271,6 @@ onBeforeMount(() => {
                                     :min="ownership?.currentInsight === 0 ? 1 : 0"
                                     :max="ownership?.currentInsight === 0 ? 30 : ownership?.currentInsight === 1 ? 40 : ownership?.currentInsight === 2 ? 50 : 60"
                                     class="input input-sm w-24 bg-slate-800 text-white"
-                                    :disabled="!isManualOwnershipActive"
                                     :value="draftLevel"
                                     @focus="startLevelEdit"
                                     @input="draftLevel = ($event.target as HTMLInputElement).value"
@@ -274,7 +281,6 @@ onBeforeMount(() => {
                                 <span>Insight</span>
                                 <select
                                     class="select select-sm w-20 bg-slate-800 text-white"
-                                    :disabled="!isManualOwnershipActive"
                                     :value="ownership?.currentInsight ?? 0"
                                     @change="setCurrentInsight(Number(($event.target as HTMLSelectElement).value))">
                                     <option :value="0">0</option>
@@ -290,7 +296,6 @@ onBeforeMount(() => {
                                     min="1"
                                     :max="ownership?.currentInsight === 0 ? 1 : ownership?.currentInsight === 1 ? 5 : ownership?.currentInsight === 2 ? 10 : 15"
                                     class="input input-sm w-20 bg-slate-800 text-white"
-                                    :disabled="!isManualOwnershipActive"
                                     :value="draftResonance"
                                     @focus="startResonanceEdit"
                                     @input="draftResonance = ($event.target as HTMLInputElement).value"
@@ -302,7 +307,6 @@ onBeforeMount(() => {
                                 <span>Portrait</span>
                                 <select
                                     class="select select-sm w-20 bg-slate-800 text-white"
-                                    :disabled="!isManualOwnershipActive"
                                     :value="ownership?.currentPortrait ?? 0"
                                     @change="setCurrentPortrait(Number(($event.target as HTMLSelectElement).value))">
                                     <option :value="0">0</option>
@@ -314,7 +318,7 @@ onBeforeMount(() => {
                                 </select>
                             </label>
                         </div>
-                        <div class="flex flex-col gap-3" v-if="hasEuphoria">
+                        <div v-if="ownershipSource === 'manual' && ownership?.isOwned && hasEuphoria" class="flex flex-col gap-3">
                             <div
                                 class="flex flex-wrap items-center gap-3"
                                 v-for="index in euphoriaRows"
@@ -323,13 +327,12 @@ onBeforeMount(() => {
                                     <input
                                         type="checkbox"
                                         class="checkbox checkbox-info checkbox-sm"
-                                        :disabled="!isManualOwnershipActive"
                                         :checked="ownership?.currentEuphoriaEnabled?.[index] ?? false"
                                         @change="setCurrentEuphoriaEnabled(index, ($event.target as HTMLInputElement).checked)" />
                                     <span>Euphoria {{ index + 1 }}</span>
                                     <select
                                         class="select select-sm w-20 bg-slate-800 text-white"
-                                        :disabled="!isManualOwnershipActive || !(ownership?.currentEuphoriaEnabled?.[index] ?? false)"
+                                        :disabled="!(ownership?.currentEuphoriaEnabled?.[index] ?? false)"
                                         :value="ownership?.currentEuphoria?.[index] ?? 0"
                                         @change="setCurrentEuphoria(index, Number(($event.target as HTMLSelectElement).value))">
                                         <option :value="0">0</option>

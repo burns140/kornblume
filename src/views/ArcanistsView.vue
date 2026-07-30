@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed } from 'vue';
 import { IArcanist } from '@/types';
 import { useI18n } from 'vue-i18n';
 import { useDataStore } from '@/stores/dataStore';
-import { usePullsRecordStore, IPull } from '@/stores/pullsRecordStore';
+import { usePullsRecordStore } from '@/stores/pullsRecordStore';
 import { formatArcanists } from '@/composables/arcanists';
 import { getAfflatusList } from '@/composables/images';
 import { usePlannerSettingsStore } from '@/stores/plannerSettingsStore';
@@ -15,10 +15,10 @@ const arcanistStore = useDataStore().arcanists;
 const listArcanists = ref<IArcanist[]>(arcanistStore);
 const sortMode = ref<'id' | 'name'>('id');
 const searchQuery = ref('');
-const pulls = ref<IPull[]>([]);
 const activeRarities = ref<number[]>([]);
 const activeAfflatus = ref<string[]>([]);
 const ownershipStore = useArcanistOwnershipStore();
+const pullsStore = usePullsRecordStore();
 
 const selectedRarities = (rarity: number) => {
   if (activeRarities.value.includes(rarity)) {
@@ -39,7 +39,7 @@ const selectedAfflatus = (afflatus: string) => {
 const portraitCounts = computed(() => {
   return listArcanists.value.map((arc) => ({
     ArcanistName: arc.Name,
-    count: pulls.value.filter((pull) => pull.ArcanistName === arc.Name).length - 1
+    count: pullsStore.data.filter((pull) => pull.ArcanistName === arc.Name).length - 1
   }));
 });
 
@@ -85,11 +85,6 @@ const filteredArcanists = computed(() => {
   return filtered;
 });
 
-onMounted(() => {
-  if (usePullsRecordStore().data.length > 0) {
-    pulls.value = [...usePullsRecordStore().data];
-  }
-});
 </script>
 
 <template>

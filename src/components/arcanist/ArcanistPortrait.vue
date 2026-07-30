@@ -19,17 +19,8 @@ const props = defineProps({
 const ownershipStore = useArcanistOwnershipStore();
 const effectiveOwnership = computed(() => ownershipStore.getEffectiveEntry(props.arcanist.Id));
 const ownershipSource = computed<OwnershipSource>(() => {
-    const manualEntry = ownershipStore.getManualEntry(props.arcanist.Id);
-    if (manualEntry) {
-        return "manual";
-    }
-
-    const trackerEntry = ownershipStore.getTrackerEntry(props.arcanist.Id);
-    if (trackerEntry) {
-        return "tracker";
-    }
-
-    return "none";
+    if (!effectiveOwnership.value?.isOwned) return 'none';
+    return effectiveOwnership.value.source;
 });
 
 const ownershipTooltip = computed(() => {
@@ -39,10 +30,13 @@ const ownershipTooltip = computed(() => {
 });
 
 const displayPortraitCount = computed(() => {
-    if (ownershipSource.value === 'manual') {
-        return effectiveOwnership.value?.currentPortrait ?? 0;
+    if (!effectiveOwnership.value?.isOwned) {
+        return null;
     }
-    return props.count >= 0 ? props.count : null;
+    if (ownershipSource.value === 'manual' || ownershipSource.value === 'tracker') {
+        return effectiveOwnership.value?.currentPortrait ?? (props.count >= 0 ? props.count : null);
+    }
+    return null;
 });
 
 </script>
