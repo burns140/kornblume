@@ -16,8 +16,8 @@ const isOwnedChecked = computed(() => ownershipSource.value === 'manual');
 const ownershipToggleLabel = computed(() => ownershipSource.value === 'tracker' ? 'Overwrite tracker ownership' : 'Owned');
 const hasEuphoria = computed(() => (props.arcanist?.Euphoria?.length ?? 0) > 0);
 const euphoriaRows = computed(() => Array.from({ length: props.arcanist?.Euphoria?.length ?? 0 }, (_, index) => index));
-const draftLevel = ref('');
-const draftResonance = ref('');
+const inputLevel = ref('');
+const inputResonance = ref('');
 
 const clampLevel = (insight: number, level: number) => {
     const insightMaxLevels = [30, 40, 50, 60];
@@ -83,8 +83,8 @@ const setOwned = (value: boolean) => {
 };
 
 const setCurrentInsight = (value: number) => {
-    const draftLevelText = draftLevel.value.trim();
-    const enteredLevel = draftLevelText === '' ? NaN : Number(draftLevelText);
+    const levelInputText = inputLevel.value.trim();
+    const enteredLevel = levelInputText === '' ? NaN : Number(levelInputText);
     const preservedLevel = Number.isFinite(enteredLevel) ? enteredLevel : (effectiveEntry.value?.level ?? 1);
     const nextLevel = clampLevel(value, preservedLevel);
     const nextResonance = clampResonance(value, effectiveEntry.value?.resonance ?? 1);
@@ -94,7 +94,7 @@ const setCurrentInsight = (value: number) => {
         level: nextLevel,
         resonance: nextResonance,
     });
-    draftLevel.value = String(nextLevel);
+    inputLevel.value = String(nextLevel);
 };
 
 const setCurrentPortrait = (value: number) => {
@@ -133,11 +133,11 @@ const setCurrentEuphoriaEnabled = (index: number, value: boolean) => {
 };
 
 const startLevelEdit = () => {
-    draftLevel.value = String(effectiveEntry.value?.level ?? 1);
+    inputLevel.value = String(effectiveEntry.value?.level ?? 1);
 };
 
 const startResonanceEdit = () => {
-    draftResonance.value = String(effectiveEntry.value?.resonance ?? 1);
+    inputResonance.value = String(effectiveEntry.value?.resonance ?? 1);
 };
 
 const commitResonanceEdit = (event: Event) => {
@@ -145,7 +145,7 @@ const commitResonanceEdit = (event: Event) => {
     const insight = effectiveEntry.value?.insight ?? 0;
     const nextValue = parseAndClamp(target.value, insight, 1, clampResonance);
 
-    draftResonance.value = String(nextValue);
+    inputResonance.value = String(nextValue);
     applyOwnershipUpdate({ resonance: nextValue });
 };
 
@@ -160,7 +160,7 @@ const commitLevelEdit = (event: Event) => {
     const insight = effectiveEntry.value?.insight ?? 0;
     const nextValue = parseAndClamp(target.value, insight, 1, clampLevel);
 
-    draftLevel.value = String(nextValue);
+    inputLevel.value = String(nextValue);
     applyOwnershipUpdate({ level: nextValue });
 };
 
@@ -173,8 +173,8 @@ const handleLevelKeydown = (event: KeyboardEvent) => {
 watch(
     effectiveEntry,
     (newEffectiveEntry) => {
-        draftLevel.value = String(newEffectiveEntry?.level ?? 1);
-        draftResonance.value = String(newEffectiveEntry?.resonance ?? 1);
+        inputLevel.value = String(newEffectiveEntry?.level ?? 1);
+        inputResonance.value = String(newEffectiveEntry?.resonance ?? 1);
         normalizeManualEntryValues();
     },
     { immediate: true }
@@ -183,8 +183,8 @@ watch(
 watch(
     () => props.arcanist?.Id,
     () => {
-        draftLevel.value = String(effectiveEntry.value?.level ?? 1);
-        draftResonance.value = String(effectiveEntry.value?.resonance ?? 1);
+        inputLevel.value = String(effectiveEntry.value?.level ?? 1);
+        inputResonance.value = String(effectiveEntry.value?.resonance ?? 1);
         normalizeManualEntryValues();
     },
     { immediate: true }
@@ -218,9 +218,9 @@ watch(
                         min="1"
                         :max="effectiveEntry?.insight === 0 ? 30 : effectiveEntry?.insight === 1 ? 40 : effectiveEntry?.insight === 2 ? 50 : 60"
                         class="input input-sm w-24 bg-slate-800 text-white"
-                        :value="draftLevel"
+                        :value="inputLevel"
                         @focus="startLevelEdit"
-                        @input="draftLevel = ($event.target as HTMLInputElement).value"
+                        @input="inputLevel = ($event.target as HTMLInputElement).value"
                         @blur="commitLevelEdit($event)"
                         @keydown="handleLevelKeydown($event)" />
                 </label>
@@ -243,9 +243,9 @@ watch(
                         min="1"
                         :max="effectiveEntry?.insight === 0 ? 1 : effectiveEntry?.insight === 1 ? 5 : effectiveEntry?.insight === 2 ? 10 : 15"
                         class="input input-sm w-20 bg-slate-800 text-white"
-                        :value="draftResonance"
+                        :value="inputResonance"
                         @focus="startResonanceEdit"
-                        @input="draftResonance = ($event.target as HTMLInputElement).value"
+                        @input="inputResonance = ($event.target as HTMLInputElement).value"
                         @change="commitResonanceEdit($event)"
                         @blur="commitResonanceEdit($event)"
                         @keydown="handleResonanceKeydown($event)" />
