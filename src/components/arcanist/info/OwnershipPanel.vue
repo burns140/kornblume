@@ -9,11 +9,11 @@ const props = defineProps<{
 }>();
 
 const ownershipStore = useArcanistOwnershipStore();
-const manualOwnership = computed(() => ownershipStore.getManualEntry(props.arcanist?.Id ?? -1));
-const ownership = computed(() => ownershipStore.getEffectiveEntry(props.arcanist?.Id ?? -1));
-const ownershipSource = computed<OwnershipSource>(() => ownership.value?.source ?? 'none');
+const manualEntry = computed(() => ownershipStore.getManualEntry(props.arcanist?.Id ?? -1));
+const effectiveEntry = computed(() => ownershipStore.getEffectiveEntry(props.arcanist?.Id ?? -1));
+const ownershipSource = computed<OwnershipSource>(() => effectiveEntry.value?.source ?? 'none');
 
-const checkboxIsChecked = computed(() => manualOwnership.value?.isOwned ?? false);
+const isOwnedChecked = computed(() => manualEntry.value?.isOwned ?? false);
 const ownershipToggleLabel = computed(() => ownershipSource.value === 'tracker' ? 'Overwrite tracker ownership' : 'Owned');
 const hasEuphoria = computed(() => (props.arcanist?.Euphoria?.length ?? 0) > 0);
 const euphoriaRows = computed(() => Array.from({ length: props.arcanist?.Euphoria?.length ?? 0 }, (_, index) => index));
@@ -48,18 +48,28 @@ const applyOwnershipUpdate = (updates: Partial<IArcanistOwnershipEntry>) => {
     });
 };
 
-const normalizeResonanceIfNeeded = () => {
-    if (!ownership.value || ownership.value.currentResonance >= 1) return;
+const normalizeManualEntryValues = () => {
+    if (!effectiveEntry.value || ownershipSource.value !== 'manual') return;
 
-    const insight = ownership.value.currentInsight ?? 0;
-    applyOwnershipUpdate({ currentResonance: clampResonance(insight, ownership.value.currentResonance) });
+    const insight = effectiveEntry.value.currentInsight ?? 0;
+    const normalizedLevel = clampLevel(insight, effectiveEntry.value.currentLevel ?? 1);
+    const normalizedResonance = clampResonance(insight, effectiveEntry.value.currentResonance ?? 1);
+
+    if (normalizedLevel === effectiveEntry.value.currentLevel && normalizedResonance === effectiveEntry.value.currentResonance) {
+        return;
+    }
+
+    applyOwnershipUpdate({
+        currentLevel: normalizedLevel,
+        currentResonance: normalizedResonance,
+    });
 };
 
 const setOwned = (value: boolean) => {
     if (!props.arcanist) return;
 
     if (!value) {
-        if (manualOwnership.value) {
+        if (manualEntry.value) {
             ownershipStore.removeEntry(props.arcanist.Id);
         }
         return;
@@ -69,16 +79,16 @@ const setOwned = (value: boolean) => {
 };
 
 const setCurrentLevel = (value: number) => {
-    const insight = ownership.value?.currentInsight ?? 0;
+    const insight = effectiveEntry.value?.currentInsight ?? 0;
     applyOwnershipUpdate({ currentLevel: clampLevel(insight, value) });
 };
 
 const setCurrentInsight = (value: number) => {
     const rawDraftLevel = draftLevel.value.trim();
     const parsedDraftLevel = rawDraftLevel === '' ? NaN : Number(rawDraftLevel);
-    const currentLevel = Number.isFinite(parsedDraftLevel) ? parsedDraftLevel : (ownership.value?.currentLevel ?? 1);
+    const currentLevel = Number.isFinite(parsedDraftLevel) ? parsedDraftLevel : (effectiveEntry.value?.currentLevel ?? 1);
     const nextLevel = clampLevel(value, currentLevel);
-    const currentResonance = ownership.value?.currentResonance ?? 1;
+    const currentResonance = effectiveEntry.value?.currentResonance ?? 1;
     const nextResonance = clampResonance(value, currentResonance);
     applyOwnershipUpdate({
         currentInsight: value,
@@ -89,7 +99,7 @@ const setCurrentInsight = (value: number) => {
 };
 
 const setCurrentResonance = (rawValue: string | number) => {
-    const insight = ownership.value?.currentInsight ?? 0;
+    const insight = effectiveEntry.value?.currentInsight ?? 0;
     const parsedValue = parseResonanceInput(rawValue);
     const nextValue = Number.isFinite(parsedValue) ? parsedValue : 1;
     applyOwnershipUpdate({ currentResonance: clampResonance(insight, nextValue) });
@@ -100,7 +110,7 @@ const setCurrentPortrait = (value: number) => {
 };
 
 const setCurrentEuphoria = (index: number, value: number) => {
-    const current = ownership.value?.currentEuphoria ?? [];
+    const current = effectiveEntry.value?.currentEuphoria ?? [];
     const nextEuphoria = Array.from(
         { length: euphoriaRows.value.length },
         (_, i) => current[i] ?? 0,
@@ -110,8 +120,8 @@ const setCurrentEuphoria = (index: number, value: number) => {
 };
 
 const setCurrentEuphoriaEnabled = (index: number, value: boolean) => {
-    const currentEnabled = ownership.value?.currentEuphoriaEnabled ?? [];
-    const current = ownership.value?.currentEuphoria ?? [];
+    const currentEnabled = effectiveEntry.value?.currentEuphoriaEnabled ?? [];
+    const current = effectiveEntry.value?.currentEuphoria ?? [];
     const nextEnabled = Array.from(
         { length: euphoriaRows.value.length },
         (_, i) => currentEnabled[i] ?? false,
@@ -131,18 +141,18 @@ const setCurrentEuphoriaEnabled = (index: number, value: boolean) => {
 };
 
 const startLevelEdit = () => {
-    draftLevel.value = String(ownership.value?.currentLevel ?? 1);
+    draftLevel.value = String(effectiveEntry.value?.currentLevel ?? 1);
 };
 
 const startResonanceEdit = () => {
-    draftResonance.value = String(ownership.value?.currentResonance ?? 1);
+    draftResonance.value = String(effectiveEntry.value?.currentResonance ?? 1);
 };
 
 const commitResonanceEdit = (event: Event) => {
     const target = event.target as HTMLInputElement;
     const rawValue = target.value.trim();
     const parsedValue = rawValue === '' ? 1 : Number(rawValue);
-    const insight = ownership.value?.currentInsight ?? 0;
+    const insight = effectiveEntry.value?.currentInsight ?? 0;
     const nextValue = Number.isFinite(parsedValue) ? clampResonance(insight, parsedValue) : clampResonance(insight, 1);
 
     draftResonance.value = String(nextValue);
@@ -159,7 +169,7 @@ const commitLevelEdit = (event: Event) => {
     const target = event.target as HTMLInputElement;
     const rawValue = target.value.trim();
     const parsedValue = rawValue === '' ? 1 : Number(rawValue);
-    const insight = ownership.value?.currentInsight ?? 0;
+    const insight = effectiveEntry.value?.currentInsight ?? 0;
     const nextValue = Number.isFinite(parsedValue) ? clampLevel(insight, parsedValue) : clampLevel(insight, 1);
 
     draftLevel.value = String(nextValue);
@@ -173,11 +183,11 @@ const handleLevelKeydown = (event: KeyboardEvent) => {
 };
 
 watch(
-    ownership,
-    (newOwnership) => {
-        draftLevel.value = String(newOwnership?.currentLevel ?? 1);
-        draftResonance.value = String(newOwnership?.currentResonance ?? 1);
-        normalizeResonanceIfNeeded();
+    effectiveEntry,
+    (newEffectiveEntry) => {
+        draftLevel.value = String(newEffectiveEntry?.currentLevel ?? 1);
+        draftResonance.value = String(newEffectiveEntry?.currentResonance ?? 1);
+        normalizeManualEntryValues();
     },
     { immediate: true }
 );
@@ -185,9 +195,9 @@ watch(
 watch(
     () => props.arcanist?.Id,
     () => {
-        draftLevel.value = String(ownership.value?.currentLevel ?? 1);
-        draftResonance.value = String(ownership.value?.currentResonance ?? 1);
-        normalizeResonanceIfNeeded();
+        draftLevel.value = String(effectiveEntry.value?.currentLevel ?? 1);
+        draftResonance.value = String(effectiveEntry.value?.currentResonance ?? 1);
+        normalizeManualEntryValues();
     },
     { immediate: true }
 );
@@ -197,28 +207,28 @@ watch(
     <div class="mt-4 rounded-lg border border-slate-700 bg-slate-900/60 p-4 text-sm text-slate-200">
         <div class="mb-3 flex flex-wrap items-center gap-2">
             <span class="rounded-full border border-slate-600 px-2 py-1 text-xs uppercase tracking-wide text-slate-300">
-                Ownership: {{ ownership?.isOwned ? ownershipSource : 'NONE' }}
+                Ownership: {{ effectiveEntry?.isOwned ? ownershipSource : 'NONE' }}
             </span>
-            <span v-if="ownership?.isOwned && ownershipSource === 'manual'" class="text-xs text-emerald-400">You set this manually.</span>
-            <span v-else-if="ownership?.isOwned && ownershipSource === 'tracker'" class="text-xs text-sky-400">Showing ownership from summon tracker.</span>
+            <span v-if="effectiveEntry?.isOwned && ownershipSource === 'manual'" class="text-xs text-emerald-400">You set this manually.</span>
+            <span v-else-if="effectiveEntry?.isOwned && ownershipSource === 'tracker'" class="text-xs text-sky-400">Showing ownership from summon tracker.</span>
             <span v-else class="text-xs text-slate-400">Ownership is not marked as present.</span>
         </div>
         <div class="flex flex-col gap-3">
-            <label class="flex items-center gap-2">
+            <div class="flex items-center gap-2">
                 <input
                     type="checkbox"
                     class="checkbox checkbox-info checkbox-sm"
-                    :checked="checkboxIsChecked"
+                    :checked="isOwnedChecked"
                     @change="setOwned(($event.target as HTMLInputElement).checked)" />
                 <span>{{ ownershipToggleLabel }}</span>
-            </label>
-            <div v-if="ownershipSource === 'manual' && ownership?.isOwned" class="flex flex-wrap items-center gap-3">
+            </div>
+            <div v-if="ownershipSource === 'manual' && effectiveEntry?.isOwned" class="flex flex-wrap items-center gap-3">
                 <label class="flex items-center gap-2">
                     <span>Level</span>
                     <input
                         type="number"
-                        :min="ownership?.currentInsight === 0 ? 1 : 0"
-                        :max="ownership?.currentInsight === 0 ? 30 : ownership?.currentInsight === 1 ? 40 : ownership?.currentInsight === 2 ? 50 : 60"
+                        min="1"
+                        :max="effectiveEntry?.currentInsight === 0 ? 30 : effectiveEntry?.currentInsight === 1 ? 40 : effectiveEntry?.currentInsight === 2 ? 50 : 60"
                         class="input input-sm w-24 bg-slate-800 text-white"
                         :value="draftLevel"
                         @focus="startLevelEdit"
@@ -230,7 +240,7 @@ watch(
                     <span>Insight</span>
                     <select
                         class="select select-sm w-20 bg-slate-800 text-white"
-                        :value="ownership?.currentInsight ?? 0"
+                        :value="effectiveEntry?.currentInsight ?? 0"
                         @change="setCurrentInsight(Number(($event.target as HTMLSelectElement).value))">
                         <option :value="0">0</option>
                         <option :value="1">1</option>
@@ -243,7 +253,7 @@ watch(
                     <input
                         type="number"
                         min="1"
-                        :max="ownership?.currentInsight === 0 ? 1 : ownership?.currentInsight === 1 ? 5 : ownership?.currentInsight === 2 ? 10 : 15"
+                        :max="effectiveEntry?.currentInsight === 0 ? 1 : effectiveEntry?.currentInsight === 1 ? 5 : effectiveEntry?.currentInsight === 2 ? 10 : 15"
                         class="input input-sm w-20 bg-slate-800 text-white"
                         :value="draftResonance"
                         @focus="startResonanceEdit"
@@ -256,7 +266,7 @@ watch(
                     <span>Portrait</span>
                     <select
                         class="select select-sm w-20 bg-slate-800 text-white"
-                        :value="ownership?.currentPortrait ?? 0"
+                        :value="effectiveEntry?.currentPortrait ?? 0"
                         @change="setCurrentPortrait(Number(($event.target as HTMLSelectElement).value))">
                         <option :value="0">0</option>
                         <option :value="1">1</option>
@@ -267,7 +277,7 @@ watch(
                     </select>
                 </label>
             </div>
-            <div v-if="ownershipSource === 'manual' && ownership?.isOwned && hasEuphoria" class="flex flex-col gap-3">
+            <div v-if="ownershipSource === 'manual' && effectiveEntry?.isOwned && hasEuphoria" class="flex flex-col gap-3">
                 <div
                     v-for="index in euphoriaRows"
                     :key="index"
@@ -276,13 +286,13 @@ watch(
                         <input
                             type="checkbox"
                             class="checkbox checkbox-info checkbox-sm"
-                            :checked="ownership?.currentEuphoriaEnabled?.[index] ?? false"
+                            :checked="effectiveEntry?.currentEuphoriaEnabled?.[index] ?? false"
                             @change="setCurrentEuphoriaEnabled(index, ($event.target as HTMLInputElement).checked)" />
                         <span>Euphoria {{ index + 1 }}</span>
                         <select
                             class="select select-sm w-20 bg-slate-800 text-white"
-                            :disabled="!(ownership?.currentEuphoriaEnabled?.[index] ?? false)"
-                            :value="ownership?.currentEuphoria?.[index] ?? 0"
+                            :disabled="!(effectiveEntry?.currentEuphoriaEnabled?.[index] ?? false)"
+                            :value="effectiveEntry?.currentEuphoria?.[index] ?? 0"
                             @change="setCurrentEuphoria(index, Number(($event.target as HTMLSelectElement).value))">
                             <option :value="0">0</option>
                             <option :value="1">1</option>

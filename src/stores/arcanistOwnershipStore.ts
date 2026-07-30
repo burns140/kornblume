@@ -96,7 +96,7 @@ export const useArcanistOwnershipStore = defineStore("arcanistOwnership", {
         isOwned,
         currentLevel: 1,
         currentInsight: 0,
-        currentResonance: 0,
+        currentResonance: 1,
         currentPortrait: 0,
         currentEuphoria: [],
         currentEuphoriaEnabled: [],
@@ -131,7 +131,7 @@ export const useArcanistOwnershipStore = defineStore("arcanistOwnership", {
           isOwned: updates.isOwned ?? false,
           currentLevel: updates.currentLevel ?? 1,
           currentInsight: updates.currentInsight ?? 0,
-          currentResonance: updates.currentResonance ?? 0,
+          currentResonance: updates.currentResonance ?? 1,
           currentPortrait: updates.currentPortrait ?? 0,
           currentEuphoria: Array.isArray(updates.currentEuphoria)
             ? updates.currentEuphoria
