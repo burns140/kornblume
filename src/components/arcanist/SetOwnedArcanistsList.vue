@@ -60,10 +60,10 @@ const getOwnershipToggleLabel = (id: number) => (hasTrackerOwnership(id) ? 'Over
 const getSourceBadgeClass = (id: number) => {
   const source = getOwnershipSource(id);
   if (source === 'manual') {
-    return 'border-emerald-400/40 bg-emerald-400/10 text-emerald-200';
+    return 'border-amber-400/50 bg-amber-400/12 text-amber-100';
   }
   if (source === 'tracker') {
-    return 'border-sky-400/40 bg-sky-400/10 text-sky-200';
+    return 'border-cyan-400/50 bg-cyan-400/12 text-cyan-100';
   }
   return 'border-slate-500/40 bg-slate-500/10 text-slate-300';
 };
@@ -71,10 +71,10 @@ const getSourceBadgeClass = (id: number) => {
 const getSourceDotClass = (id: number) => {
   const source = getOwnershipSource(id);
   if (source === 'manual') {
-    return 'bg-emerald-300';
+    return 'bg-amber-300';
   }
   if (source === 'tracker') {
-    return 'bg-sky-300';
+    return 'bg-cyan-300';
   }
   return 'bg-slate-400';
 };
@@ -82,10 +82,10 @@ const getSourceDotClass = (id: number) => {
 const getRowClass = (id: number) => {
   const source = getOwnershipSource(id);
   if (source === 'manual') {
-    return 'border-l-4 border-l-emerald-400/80';
+    return 'border-l-4 border-l-amber-400/90';
   }
   if (source === 'tracker') {
-    return 'border-l-4 border-l-sky-400/80';
+    return 'border-l-4 border-l-cyan-400/90';
   }
   return 'border-l-4 border-l-slate-500/35';
 };
