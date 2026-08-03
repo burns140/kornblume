@@ -13,7 +13,13 @@ const effectiveEntry = computed(() => ownershipStore.getEffectiveEntry(props.arc
 const ownershipSource = computed<OwnershipSource>(() => effectiveEntry.value?.source ?? 'none');
 
 const isOwnedChecked = computed(() => ownershipSource.value === 'manual');
-const ownershipToggleLabel = computed(() => ownershipSource.value === 'tracker' ? 'Overwrite tracker ownership' : 'Owned');
+const ownershipPortraitLabel = computed(() => (
+    ownershipSource.value === 'tracker'
+        ? 'Overwrite Tracker Ownership - Portrait'
+        : 'Owned - Portrait'
+));
+const portraitValue = computed(() => effectiveEntry.value?.portrait ?? 0);
+const isPortraitDisabled = computed(() => ownershipSource.value !== 'manual');
 
 const applyOwnershipUpdate = (updates: { portrait?: number }) => {
     if (!props.arcanist) {
@@ -56,20 +62,18 @@ const setCurrentPortrait = (value: number) => {
             <span v-else class="text-xs text-slate-400">Ownership is not marked as present.</span>
         </div>
         <div class="flex flex-col gap-3">
-            <div class="flex items-center gap-2">
+            <div class="flex flex-wrap items-center gap-2">
                 <input
                     type="checkbox"
                     class="checkbox checkbox-info checkbox-sm"
                     :checked="isOwnedChecked"
                     @change="setOwned(($event.target as HTMLInputElement).checked)" />
-                <span>{{ ownershipToggleLabel }}</span>
-            </div>
-            <div v-if="ownershipSource === 'manual' && effectiveEntry" class="flex flex-wrap items-center gap-3">
                 <label class="flex items-center gap-2">
-                    <span>Portrait</span>
+                    <span>{{ ownershipPortraitLabel }}</span>
                     <select
                         class="select select-sm w-20 bg-slate-800 text-white"
-                        :value="effectiveEntry?.portrait ?? 0"
+                        :disabled="isPortraitDisabled"
+                        :value="portraitValue"
                         @change="setCurrentPortrait(Number(($event.target as HTMLSelectElement).value))">
                         <option :value="0">0</option>
                         <option :value="1">1</option>

@@ -71,6 +71,7 @@ export const useArcanistOwnershipStore = defineStore("arcanistOwnership", {
       return this.getTrackerEntry(id);
     },
     setOwned(id: number, name: string) {
+      const trackerEntry = this.getTrackerEntry(id);
       this.entries = this.entries.filter(
         (entry) => entry.Id !== id || entry.source !== "manual",
       );
@@ -81,7 +82,7 @@ export const useArcanistOwnershipStore = defineStore("arcanistOwnership", {
         level: 1,
         insight: 0,
         resonance: 1,
-        portrait: 0,
+        portrait: trackerEntry?.portrait ?? 0,
         euphorias: [],
         euphoriasEnabled: [],
         source: "manual",
