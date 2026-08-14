@@ -55,6 +55,7 @@ export const bannerList = [
   'The Strange Attractor',
   'Conduit of the Unseen',
   'Deciphering Reality',
+  'Beneath the Guise of Her Cocoon',
 
   // standard
   'Amongst the Lake',
@@ -98,7 +99,9 @@ export const bannerList = [
   // Paper Heron
   'Her Heart-Cut Spring',
   // The Twins
-  'Analysis of Metallic Dramaturgy'
+  'Analysis of Metallic Dramaturgy',
+  // Rhiannon
+  'A Newly Hatched Chapter'
 ];
 
 export const bannerRateUp = [
@@ -156,7 +159,8 @@ export const bannerRateUp = [
   'Cheng Heguang',
   'Lorentz Butterfly',
   'Ramona',
-  'Enigma'
+  'Enigma',
+  'Ms. Stranger'
 ];
 
 export const specialArcanists: string[] = [
