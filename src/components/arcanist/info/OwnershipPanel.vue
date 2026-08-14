@@ -11,10 +11,17 @@ const props = defineProps<{
 const ownershipStore = useArcanistOwnershipStore();
 const effectiveEntry = computed(() => ownershipStore.getEffectiveEntry(props.arcanist?.Id ?? -1));
 const ownershipSource = computed<OwnershipSource>(() => effectiveEntry.value?.source ?? 'none');
+const hasTrackerOwnership = computed(() => {
+    if (!props.arcanist) {
+        return false;
+    }
+
+    return !!ownershipStore.getTrackerEntry(props.arcanist.Id);
+});
 
 const isOwnedChecked = computed(() => ownershipSource.value === 'manual');
 const ownershipPortraitLabel = computed(() => (
-    ownershipSource.value === 'tracker'
+    hasTrackerOwnership.value
         ? 'Overwrite Tracker Ownership - Portrait'
         : 'Owned - Portrait'
 ));

@@ -3,7 +3,7 @@ import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useDataStore } from '@/stores/dataStore';
 import { useArcanistOwnershipStore } from '@/stores/arcanistOwnershipStore';
-import { getAfflatusList, getArcanistAfflatusPath } from '@/composables/images';
+import { getAfflatusList } from '@/composables/images';
 import { formatArcanists } from '@/composables/arcanists';
 import type { IArcanist } from '@/types';
 import ArcanistIconDisplay from '@/components/arcanist/ArcanistIconDisplay.vue';
@@ -15,6 +15,7 @@ const dataStore = useDataStore();
 const ownershipStore = useArcanistOwnershipStore();
 
 const searchQuery = ref('');
+const sortMode = ref<'id' | 'name'>('id');
 const activeRarities = ref<number[]>([]);
 const activeAfflatus = ref<string[]>([]);
 const ownershipFilter = ref<ownedFilter>('all');
@@ -139,6 +140,11 @@ const filteredArcanists = computed(() => {
   }
 
   filtered = formatArcanists(filtered);
+
+  if (sortMode.value === 'id') {
+    return [...filtered].sort((a, b) => b.Id - a.Id);
+  }
+
   return [...filtered].sort((a, b) => a.Name.localeCompare(b.Name));
 });
 </script>
@@ -146,6 +152,14 @@ const filteredArcanists = computed(() => {
 <template>
   <div class="rounded-lg border border-slate-700 bg-slate-900/60 p-4 text-sm text-slate-200">
     <div class="flex flex-wrap items-center gap-3 pb-4">
+      <label class="flex items-center gap-2 text-white">
+        <span>Sort by:</span>
+        <select v-model="sortMode" class="select select-sm bg-gray-800 text-white">
+          <option value="id">ID (High → Low)</option>
+          <option value="name">Name (A → Z)</option>
+        </select>
+      </label>
+
       <input
         v-model="searchQuery"
         type="text"
@@ -202,7 +216,7 @@ const filteredArcanists = computed(() => {
             :title="afflatus"
             @click="selectedAfflatus(afflatus)"
             class="h-10 w-10 rounded-md p-1 flex items-center justify-center">
-            <img class="h-9 w-9 object-contain" :src="getArcanistAfflatusPath(afflatus)" alt="" />
+            <img class="h-9 w-9 object-contain" :src="`images/arcanists/misc/${afflatus.toLowerCase()}.webp`" alt="" />
           </button>
         </div>
       </div>

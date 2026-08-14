@@ -118,7 +118,7 @@ const filteredArcanists = computed(() => {
       </div>
 
       <!--Search bar and unreleased filter-->
-      <div class="flex flex-wrap gap-x-10 justify-center">
+      <div class="flex flex-wrap items-center gap-x-10 justify-center">
         <router-link to="/set-owned-arcanists" class="btn btn-sm btn-outline text-white hover:bg-slate-700">
           Set owned arcanists
         </router-link>
