@@ -25,7 +25,7 @@ const arcanists = useDataStore().arcanists;
 const isError = ref(false);
 const wrongTimestamps = ref<number[]>([]);
 // const selectedBannerType = ref('Limited');
-const selectedBannerType = ref('Analysis of Metallic Dramaturgy');
+const selectedBannerType = ref('A Newly Hatched Chapter');
 const pulls = ref<IPull[]>([]);
 const changelogsStore = useChangelogsStore();
 const tutorialButton = ref<HTMLButtonElement>(null!);
@@ -108,6 +108,7 @@ const nautikaPulls = createPullsByBannerType('The Myth at Her Fingertips');
 const berylPulls = createPullsByBannerType("On Fate's Cue");
 const heronPulls = createPullsByBannerType('Her Heart-Cut Spring');
 const twinsPulls = createPullsByBannerType('Analysis of Metallic Dramaturgy');
+const rhiannonPulls = createPullsByBannerType('A Newly Hatched Chapter');
 
 const limitedPulls = computed(() => {
   const filteredPulls = sortedPulls.value.filter(
@@ -132,7 +133,8 @@ const limitedPulls = computed(() => {
       pull.BannerType !== 'The Snow of Dushuo' &&
       pull.BannerType !== 'Her Heart-Cut Spring' &&
       pull.BannerType !== "From the Lake's Heart" &&
-      pull.BannerType !== 'Analysis of Metallic Dramaturgy'
+      pull.BannerType !== 'Analysis of Metallic Dramaturgy' &&
+      pull.BannerType !== 'A Newly Hatched Chapter'
   );
   return filteredPulls.map((pull, index) => {
     return {
@@ -596,11 +598,11 @@ const selectBannerType = (bannerType: string) => {
       <!-- Limited Placeholder -->
       <button
         v-bind:class="{
-          'border-button': selectedBannerType === 'Analysis of Metallic Dramaturgy'
+          'border-button': selectedBannerType === 'A Newly Hatched Chapter'
         }"
         class="text-white py-1 px-3 hover:bg-info rounded-md border-2 border-transparent"
-        @click="selectBannerType('Analysis of Metallic Dramaturgy')">
-        {{ $t('the-twins') }}
+        @click="selectBannerType('A Newly Hatched Chapter')">
+        {{ $t('rhiannon') }}
       </button>
 
       <button
@@ -645,7 +647,8 @@ const selectBannerType = (bannerType: string) => {
                 selectedBannerType === 'The Snow of Dushuo' ||
                 selectedBannerType === 'Her Heart-Cut Spring' ||
                 selectedBannerType === 'From the Lake\'s Heart' ||
-                selectedBannerType === 'Analysis of Metallic Dramaturgy'
+                selectedBannerType === 'Analysis of Metallic Dramaturgy' ||
+                selectedBannerType === 'A Newly Hatched Chapter'
             }"
             class="text-white py-1 px-3 hover:bg-info rounded-md border-2 border-transparent">
             {{ $t('special') }}
@@ -865,6 +868,16 @@ const selectBannerType = (bannerType: string) => {
                 {{ $t('the-twins') }}
               </button>
             </li>
+            <li>
+              <button
+                v-bind:class="{
+                  'border-button': selectedBannerType === 'A Newly Hatched Chapter'
+                }"
+                class="text-white py-1 px-3 hover:bg-info rounded-md w-full text-left border-2 border-transparent"
+                @click="selectBannerType('A Newly Hatched Chapter')">
+                {{ $t('rhiannon') }}
+              </button>
+            </li>
           </div>
         </ul>
       </div>
@@ -1048,6 +1061,14 @@ const selectBannerType = (bannerType: string) => {
       :isError="isError"
       :wrongTimestamps="wrongTimestamps"
       banner-type="Analysis of Metallic Dramaturgy" />
+    <TrackerBoard
+      v-if="selectedBannerType === 'A Newly Hatched Chapter'"
+      :text="$t('rhiannon')"
+      :pulls="rhiannonPulls"
+      :allPulls="allPulls"
+      :isError="isError"
+      :wrongTimestamps="wrongTimestamps"
+      banner-type="A Newly Hatched Chapter" />
   </div>
 </template>
 

@@ -1,6 +1,12 @@
 export const changelogs = [
   // Add more from top
   {
+    date: '14/08/2026',
+    description: `
+        • Add Rhiannon and Ms. Stranger banners. <br>
+        `
+  },
+  {
     date: '24/07/2026',
     description: `
         • Add The Twins and NORA banner.
