@@ -204,6 +204,7 @@
   "possible-drops": "Possible material drops",
   "obtained-from-the-following-stages": "Obtained from the following stages",
   "Stats": "Stats",
+  "no-stats-available": "No stats available",
   "Upgrades": "Upgrades",
   "Skills": "Skills",
   "Materials": "Materials",
@@ -260,5 +261,13 @@
   "from-reveries": "Reveries Rewards",
   "filter": "Filter",
   "show-owned-arcanists": "Only show owned arcanists",
-  "from-insight-casket": "Got from available Insight Caskets"
+  "from-insight-casket": "Got from available Insight Caskets",
+  "dushuo": "Dushuo",
+  "summary-dushuo": "The Snow of Dushuo Summary",
+  "heron": "Paper Heron",
+  "summary-heron": "Her Heart-Cut Spring Summary",
+  "lake-heart": "Lake's Heart",
+  "summary-lake-heart": "From the Lake's Heart Summary",
+  "search-banners": "Search banners",
+  "no-results": "No results"
 }

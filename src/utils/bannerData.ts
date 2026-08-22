@@ -51,6 +51,11 @@ export const bannerList = [
   'Cognitive Dynamics',
   'The Oath Unyielding',
   'Witness of Iron and Blood',
+  'Soaring Aspirations',
+  'The Strange Attractor',
+  'Conduit of the Unseen',
+  'Deciphering Reality',
+  'Beneath the Guise of Her Cocoon',
 
   // standard
   'Amongst the Lake',
@@ -70,6 +75,10 @@ export const bannerList = [
   'Golden Spindle',
   // ripples,
   'Ripples on the Water',
+  // dushuo
+  'The Snow of Dushuo',
+  // limited triple banners
+  "From the Lake's Heart",
 
   // jiu niangzi
   'Till the Last Drop',
@@ -79,7 +88,6 @@ export const bannerList = [
   'Longing for Innocence',
   // liang yue
   'Moonbeam Guardian',
-
   // ezio
   'A Prophet Guided by Time',
   // kassandra
@@ -87,7 +95,13 @@ export const bannerList = [
   // nautika
   'The Myth at Her Fingertips',
   // beryl
-  "On Fate's Cue"
+  "On Fate's Cue",
+  // Paper Heron
+  'Her Heart-Cut Spring',
+  // The Twins
+  'Analysis of Metallic Dramaturgy',
+  // Rhiannon
+  'A Newly Hatched Chapter'
 ];
 
 export const bannerRateUp = [
@@ -141,7 +155,12 @@ export const bannerRateUp = [
   'Brume',
   'Ulrich',
   'Marsha',
-  'Igor'
+  'Igor',
+  'Cheng Heguang',
+  'Lorentz Butterfly',
+  'Ramona',
+  'Enigma',
+  'Ms. Stranger'
 ];
 
 export const specialArcanists: string[] = [

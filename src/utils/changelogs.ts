@@ -1,16 +1,104 @@
 export const changelogs = [
   // Add more from top
   {
+    date: '14/08/2026',
+    description: `
+        • Add Rhiannon and Ms. Stranger banners. <br>
+        `
+  },
+  {
+    date: '24/07/2026',
+    description: `
+        • Add The Twins and NORA banner.
+        `
+  },
+  {
+    date: '07/07/2026',
+    description: `
+        • Add Cornerstone as unreleased arcanist.
+        `
+  },
+  {
+    date: '03/07/2026',
+    description: `
+        • Add Enigma banner.
+        `
+  },
+  {
+    date: '16/06/2026',
+    description: `
+        • Add Everecho as unreleased arcanist. <br>
+        • Add J and Hissabeth euphorias.
+        `
+  },
+  {
+    date: '25/05/2026',
+    description: `
+        • Add Ms. Stranger as unreleased arcanist. <br>
+        • Add Lorentz Butterfly and Ramona banners.
+        `
+  },
+  {
+    date: '08/05/2026',
+    description: `
+        • Add From The Lake's Heart banner.
+        `
+  },
+  {
+    date: '08/05/2026',
+    description: `
+        • Add Rhiannon, Coppélia and Silverwing Eagle as unreleased arcanists. <br>
+        • Add Nautika and Regulus euphorias. <br>
+        • Fix issue related to Cheng Heguang banner. <br>
+        • Update Japanese translation by toraojp0512-ship-it.`
+  },
+  {
+    date: '24/04/2026',
+    description: `
+        • Add Recoleta euphoria.`
+  },
+  {
+    date: '20/04/2026',
+    description: `
+        • Add Paper Heron and Cheng Heguang banners <br>
+        • Add Adler as unreleased arcanist.`
+  },
+  {
+    date: '16/04/2026',
+    description: `
+        • Add The Snow of Dushuo banner. 
+      `
+  },
+  {
+    date: '30/03/2026',
+    description: `
+        • Add Ramona as unreleased arcanist. 
+      `
+  },
+  {
+    date: '17/03/2026',
+    description: `
+        • Add Lorentz Butterfly and Lady by the Lake as unreleased arcanists. <br>
+        • Add Spathodea and Tuesday euphorias.
+      `
+  },
+  {
+    date: '09/03/2026',
+    description: `
+        • Fix wrong quantity for 3.3 stage drops. If anything still looks wrong, please report it.
+      `
+  },
+  {
     date: '05/03/2026',
     description: `
-        • Update Planner, Arcanists, Items and Stages to version 3.3 update. <br>
+        • Update Planner, Arcanists, Items and Stages to version 3.3 update.
       `
   },
   {
     date: '02/03/2026',
     description: `
         • Add Cheng Heguang as unreleased arcanist. <br>
-        • Add Marsha and Igor banners. <br>
+        • Add Marsha and Igor banners.
       `
   },
   {
