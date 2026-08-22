@@ -2,7 +2,7 @@
 import { ref } from 'vue'
 import { exportKornblumeData, importKornblumeData, resetKornblumeData, setKornblumeData } from '@/utils';
 import { usePullsRecordStore } from '@/stores/pullsRecordStore';
-import { GApiSvc } from '@/composables/gApi';
+import { GApiSvc, parseSyncTimestamp } from '@/composables/gApi';
 
 const fileInput = ref<HTMLElement>(null!);
 const isGapiReady = ref(false);
@@ -50,6 +50,7 @@ const loginGoogleDrive = async () => {
         console.log('kornblume.json exists. importing data...')
         const fileData = await GApiSvc.downloadFile(file.id);
         setKornblumeData(fileData);
+        localStorage.setItem('lastModified', parseSyncTimestamp(fileData.lastModified).toISOString());
         setTimeout(() => window.location.reload());
     }
 }

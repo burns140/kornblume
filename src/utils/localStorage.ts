@@ -17,6 +17,19 @@ const localStorageKeys = [
     'locale'
 ];
 
+interface IWatchedStore {
+    getState: () => object,
+    snapshot: string
+}
+
+const watchedStores: IWatchedStore[] = [];
+
+export function refreshDataSnapshots () {
+    watchedStores.forEach((watched) => {
+        watched.snapshot = JSON.stringify(watched.getState());
+    });
+}
+
 export function setGlobalLastModifiedTimestamp (onUpdate?: () => void) {
     const plannerStore = usePlannerStore();
     const plannerSettingsStore = usePlannerSettingsStore();
@@ -30,12 +43,26 @@ export function setGlobalLastModifiedTimestamp (onUpdate?: () => void) {
         onUpdate?.();
     };
 
-    watch(() => plannerStore.$state, updateTimestamp, { deep: true });
-    watch(() => plannerSettingsStore.$state, updateTimestamp, { deep: true });
-    watch(() => wildernessStore.$state, updateTimestamp, { deep: true });
-    watch(() => warehouseStore.$state, updateTimestamp, { deep: true });
-    watch(() => pullsStore.$state, updateTimestamp, { deep: true });
-    watch(() => activityStore.$state, updateTimestamp, { deep: true });
+    const watchStore = (getState: () => object) => {
+        const watched: IWatchedStore = { getState, snapshot: JSON.stringify(getState()) };
+        watchedStores.push(watched);
+
+        watch(getState, () => {
+            const snapshot = JSON.stringify(getState());
+            if (snapshot === watched.snapshot) {
+                return;
+            }
+            watched.snapshot = snapshot;
+            updateTimestamp();
+        }, { deep: true });
+    };
+
+    watchStore(() => plannerStore.$state);
+    watchStore(() => plannerSettingsStore.$state);
+    watchStore(() => wildernessStore.$state);
+    watchStore(() => warehouseStore.$state);
+    watchStore(() => pullsStore.$state);
+    watchStore(() => activityStore.$state);
 }
 
 export function getGlobalLastModifiedTimestamp () {

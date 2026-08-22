@@ -2,7 +2,7 @@
 import { onMounted } from 'vue';
 import { RouterView } from 'vue-router';
 import { useGlobalStore } from './stores/global';
-import { setGlobalLastModifiedTimestamp } from '@/utils/localStorage';
+import { refreshDataSnapshots, setGlobalLastModifiedTimestamp } from '@/utils/localStorage';
 import { removeDuplicateWarehouseItems } from '@/composables/warehouse';
 import { GApiSvc, syncDrive, scheduleSyncDrive } from '@/composables/gApi';
 
@@ -12,7 +12,7 @@ import LoadingScreen from './components/navbar/LoadingScreen.vue';
 const globalStore = useGlobalStore();
 
 // init google drive when mount
-GApiSvc.init().then(() => syncDrive());
+GApiSvc.init().then(() => syncDrive({ isInitialSync: true }));
 
 function getLocalStorageDataByKey(key) {
     return JSON.parse(localStorage.getItem(key) as string);
@@ -86,6 +86,7 @@ onMounted(() => {
     clearLegacyData();
     setGlobalLastModifiedTimestamp(() => scheduleSyncDrive());
     removeDuplicateWarehouseItems();
+    refreshDataSnapshots();
 });
 </script>
 

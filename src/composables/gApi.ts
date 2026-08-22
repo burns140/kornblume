@@ -8,7 +8,16 @@ const error = ref(false);
 const subscriberCount = ref(0);
 
 let isSyncing = false;
+let pendingSync = false;
 let syncDebounceTimer: ReturnType<typeof setTimeout> | null = null;
+
+const bootLastModified = localStorage.getItem('lastModified');
+let hasLocalEdits = false;
+
+export const parseSyncTimestamp = (value: string | null | undefined) => {
+    const date = new Date(value ?? 0);
+    return isNaN(date.getTime()) ? new Date(0) : date;
+};
 
 const createScriptTag = (url) => {
     const scriptTag = document.createElement('script');
@@ -200,15 +209,19 @@ export class GApiSvc {
     }
 }
 
-export async function syncDrive () {
+export async function syncDrive ({ isInitialSync = false } = {}) {
     // cancel any pending debounced sync
     if (syncDebounceTimer) {
         clearTimeout(syncDebounceTimer);
         syncDebounceTimer = null;
     }
 
-    // prevent concurrent syncs
-    if (isSyncing) return;
+    // a sync is already running: queue another one instead of dropping the
+    // changes that triggered this call
+    if (isSyncing) {
+        pendingSync = true;
+        return;
+    }
     isSyncing = true;
 
     try {
@@ -226,24 +239,18 @@ export async function syncDrive () {
             const actualDriveData = await GApiSvc.downloadFile(file.id);
             if (!actualDriveData) return;
 
-            const localLastModified = localStorage.getItem('lastModified');
-            const localDataLastModified = localLastModified
-                ? new Date(localLastModified)
-                : new Date(0); 
 
-            const driveLastModified = actualDriveData.lastModified;
-            const actualDriveDataLastModified = driveLastModified
-                ? new Date(driveLastModified)
-                : new Date(0);
+            const localLastModified = isInitialSync && !hasLocalEdits
+                ? bootLastModified
+                : localStorage.getItem('lastModified');
 
-            // if local timestamp is invalid/missing, prefer drive data
-            if (
-                isNaN(localDataLastModified.getTime()) ||
-                localDataLastModified < actualDriveDataLastModified
-            ) {
+            const localDataLastModified = parseSyncTimestamp(localLastModified);
+            const actualDriveDataLastModified = parseSyncTimestamp(actualDriveData.lastModified);
+
+            if (localDataLastModified < actualDriveDataLastModified) {
                 console.log('drive is newer. updating local data');
                 setKornblumeData(actualDriveData);
-                localStorage.setItem('lastModified', actualDriveData.lastModified);
+                localStorage.setItem('lastModified', actualDriveDataLastModified.toISOString());
                 setTimeout(() => window.location.reload());
             } else if (localDataLastModified > actualDriveDataLastModified) {
                 console.log('local is newer. updating drive data');
@@ -255,14 +262,14 @@ export async function syncDrive () {
         console.error('syncDrive error:', err);
     } finally {
         isSyncing = false;
+        if (pendingSync) {
+            pendingSync = false;
+            runSyncSoon(0);
+        }
     }
 }
 
-/**
- * Schedule a debounced sync to Google Drive.
- * Coalesces multiple rapid changes into a single sync call.
- */
-export function scheduleSyncDrive (delayMs = 3000) {
+function runSyncSoon (delayMs: number) {
     if (syncDebounceTimer) {
         clearTimeout(syncDebounceTimer);
     }
@@ -270,4 +277,9 @@ export function scheduleSyncDrive (delayMs = 3000) {
         syncDebounceTimer = null;
         syncDrive();
     }, delayMs);
+}
+
+export function scheduleSyncDrive (delayMs = 3000) {
+    hasLocalEdits = true;
+    runSyncSoon(delayMs);
 }
