@@ -9,7 +9,7 @@ import { usePlannerSettingsStore } from '@/stores/plannerSettingsStore'
 import { useDataStore } from '@/stores/dataStore'
 import { IArcanist, ISelectedArcanist } from '@/types'
 import { formatArcanists, sortSelectedArcanists } from '@/composables/arcanists'
-import { GApiSvc, syncDrive } from '@/composables/gApi'
+import { syncDrive } from '@/composables/gApi'
 
 import PlannerSelector from '@/components/planner/PlannerSelector.vue'
 import PlannerEdit from '@/components/planner/PlannerEdit.vue'
@@ -19,6 +19,7 @@ import PlannerWarehouse from '@/components/planner/PlannerWarehouse.vue'
 import PlannerSettings from '@/components/planner/PlannerSettings.vue'
 import PlannerTotal from '@/components/planner/PlannerTotal.vue'
 import { setupWarehouse } from '@/composables/warehouse'
+import { refreshDataSnapshots } from '@/utils/localStorage'
 import PlannerResult from '@/components/planner/PlannerResult.vue'
 import ArcanistAddArcanistList from '@/components/arcanist/ArcanistAddArcanistList.vue'
 
@@ -182,6 +183,7 @@ onMounted(() => {
     window.addEventListener('resize', updateScreenSize);
     updateScreenSize();
     setupWarehouse();
+    refreshDataSnapshots();
 });
 
 onUnmounted(() => {
@@ -194,10 +196,6 @@ onClickOutside(plannerEditRef, closeEditOverlay)
 onClickOutside(wildernessRef, closeWilderness)
 onClickOutside(warehouseRef, closeWarehouse)
 onClickOutside(settingsRef, closeSettings)
-
-GApiSvc.init().then(async () => {
-    syncDrive();
-});
 </script>
 
 <template>

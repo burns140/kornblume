@@ -3,6 +3,7 @@ import { ref, onMounted, computed } from 'vue';
 import { useWarehouseStore } from '../../stores/warehouseStore';
 import Popper from 'vue3-popper';
 import { setupWarehouse } from '../../composables/warehouse';
+import { refreshDataSnapshots } from '@/utils/localStorage';
 import { useGlobalStore } from '../../stores/global';
 import WarehouseItem from './warehouse/WarehouseItem.vue';
 import EventShopButton from './warehouse/EventShopButton.vue';
@@ -73,6 +74,7 @@ const filteredWarehouse = computed(() => {
 onMounted(() => {
     useGlobalStore().setIsEditingPlanner(true);
     setupWarehouse();
+    refreshDataSnapshots();
 });
 </script>
 
