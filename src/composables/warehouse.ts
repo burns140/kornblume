@@ -17,7 +17,7 @@ export function setupWarehouse() {
         // else statement to be updated for seamless addition of new warehouse items
         checkWarehouse();
     }
-    sortWarehouseMaterials(useWarehouseStore().data);
+    sortWarehouseMaterials();
 };
 
 export function addEventShopMaterialsToWarehouse(version: string) {
@@ -98,10 +98,11 @@ function checkWarehouse() {
     });
 }
 
-const sortWarehouseMaterials = (array: IWarehouseItem[]) => {
+const sortWarehouseMaterials = () => {
+    const warehouseStore = useWarehouseStore();
     const itemsData = useDataStore().items;
 
-    array.sort((warehouseMatlA, warehouseMatlB) => {
+    const sorted = [...warehouseStore.data].sort((warehouseMatlA, warehouseMatlB) => {
         // Find corresponding item based on material name
         const itemIndexA = itemsData.findIndex((item) => item.Name === warehouseMatlA.Material);
         const itemIndexB = itemsData.findIndex((item) => item.Name === warehouseMatlB.Material);
@@ -124,6 +125,12 @@ const sortWarehouseMaterials = (array: IWarehouseItem[]) => {
             return itemIndexB - itemIndexA;
         }
     });
+
+    // only write back when the order actually changed
+    const isAlreadySorted = sorted.every((matl, index) => matl === warehouseStore.data[index]);
+    if (!isAlreadySorted) {
+        warehouseStore.data = sorted;
+    }
 };
 
 /**
@@ -136,7 +143,7 @@ export function removeDuplicateWarehouseItems () {
     const items = warehouseStore.data;
     const seen = new Map();
 
-    warehouseStore.data = items.reduce((acc, item) => {
+    const deduplicated = items.reduce((acc, item) => {
         const materialName = item.Material;
         if (seen.has(materialName)) {
             // If we've seen this material, update its quantity
@@ -149,4 +156,8 @@ export function removeDuplicateWarehouseItems () {
         }
         return acc;
     }, [] as IWarehouseItem[]);
+
+    if (deduplicated.length !== items.length) {
+        warehouseStore.data = deduplicated;
+    }
 }

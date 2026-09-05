@@ -1,6 +1,13 @@
 export const changelogs = [
   // Add more from top
   {
+    date: '24/08/2026',
+    description: `
+        • Add Hedona as unreleased arcanist. <br>
+        • Add Noire and Moldir euphorias.
+        `
+  },
+  {
     date: '14/08/2026',
     description: `
         • Add Rhiannon and Ms. Stranger banners. <br>
