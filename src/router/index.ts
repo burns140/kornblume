@@ -30,6 +30,14 @@ const router = createRouter({
       },
     },
     {
+      path: "/arcanist-tier-list",
+      name: "arcanist-tier-list",
+      component: () => import("@/views/ArcanistTierListView.vue"),
+      meta: {
+        requiredJson: ["arcanists", "items", "characterTiers", "teams"],
+      },
+    },
+    {
       path: "/set-owned-arcanists",
       name: "set-owned-arcanists",
       component: () => import("@/views/SetOwnedArcanistsView.vue"),
