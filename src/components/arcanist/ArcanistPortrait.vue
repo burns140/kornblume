@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from "vue";
+import { OWNERSHIP_SOURCES } from "@/constants";
 import {
   getArcanistI0ImagePath,
   getArcanistFramePath,
@@ -24,14 +25,16 @@ const effectiveOwnership = computed<IArcanistOwnershipEntry | undefined>(() =>
   ownershipStore.getEffectiveEntry(props.arcanist.Id),
 );
 const ownershipSource = computed<OwnershipSource>(() =>
-  effectiveOwnership.value ? effectiveOwnership.value.source : "none",
+  effectiveOwnership.value
+    ? effectiveOwnership.value.source
+    : OWNERSHIP_SOURCES.NONE,
 );
 
 const ownershipTooltip = computed(() => {
-  if (ownershipSource.value === "manual") {
+  if (ownershipSource.value === OWNERSHIP_SOURCES.MANUAL) {
     return "Manual";
   }
-  if (ownershipSource.value === "tracker") {
+  if (ownershipSource.value === OWNERSHIP_SOURCES.TRACKER) {
     return "Tracker";
   }
   return "";

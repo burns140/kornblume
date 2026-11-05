@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from "vue";
+import { OWNERSHIP_SOURCES } from "@/constants";
 import { useArcanistOwnershipStore } from "@/stores/arcanistOwnershipStore";
 import type { OwnershipSource } from "@/stores/arcanistOwnershipStore";
 import type { IArcanist } from "@/types";
@@ -13,7 +14,7 @@ const effectiveEntry = computed(() =>
   ownershipStore.getEffectiveEntry(props.arcanist?.Id ?? -1),
 );
 const ownershipSource = computed<OwnershipSource>(
-  () => effectiveEntry.value?.source ?? "none",
+  () => effectiveEntry.value?.source ?? OWNERSHIP_SOURCES.NONE,
 );
 const hasTrackerOwnership = computed(() => {
   if (!props.arcanist) {
@@ -23,14 +24,18 @@ const hasTrackerOwnership = computed(() => {
   return !!ownershipStore.getTrackerEntry(props.arcanist.Id);
 });
 
-const isOwnedChecked = computed(() => ownershipSource.value === "manual");
+const isOwnedChecked = computed(
+  () => ownershipSource.value === OWNERSHIP_SOURCES.MANUAL,
+);
 const ownershipPortraitLabel = computed(() =>
   hasTrackerOwnership.value
     ? "Overwrite Tracker Ownership - Portrait"
     : "Owned - Portrait",
 );
 const portraitValue = computed(() => effectiveEntry.value?.portrait ?? 0);
-const isPortraitDisabled = computed(() => ownershipSource.value !== "manual");
+const isPortraitDisabled = computed(
+  () => ownershipSource.value !== OWNERSHIP_SOURCES.MANUAL,
+);
 
 const applyOwnershipUpdate = (updates: { portrait?: number }) => {
   if (!props.arcanist) {
@@ -73,12 +78,12 @@ const setCurrentPortrait = (value: number) => {
         Ownership: {{ effectiveEntry ? ownershipSource : "NONE" }}
       </span>
       <span
-        v-if="effectiveEntry && ownershipSource === 'manual'"
+        v-if="effectiveEntry && ownershipSource === OWNERSHIP_SOURCES.MANUAL"
         class="text-xs text-emerald-400"
         >You set this manually.</span
       >
       <span
-        v-else-if="effectiveEntry && ownershipSource === 'tracker'"
+        v-else-if="effectiveEntry && ownershipSource === OWNERSHIP_SOURCES.TRACKER"
         class="text-xs text-sky-400"
         >Showing ownership from summon tracker.</span
       >

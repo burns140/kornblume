@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
+import { OWNERSHIP_SOURCES } from "@/constants";
 import { useDataStore } from "@/stores/dataStore";
 import { useArcanistOwnershipStore } from "@/stores/arcanistOwnershipStore";
 import { getAfflatusList } from "@/composables/images";
@@ -66,18 +67,19 @@ const selectedAfflatus = (afflatus: string) => {
 };
 
 const getOwnershipSource = (id: number) =>
-  ownershipStore.getEffectiveEntry(id)?.source ?? "none";
+  ownershipStore.getEffectiveEntry(id)?.source ?? OWNERSHIP_SOURCES.NONE;
 const isOwned = (id: number) => !!ownershipStore.getEffectiveEntry(id);
-const isManualOwned = (id: number) => getOwnershipSource(id) === "manual";
+const isManualOwned = (id: number) =>
+  getOwnershipSource(id) === OWNERSHIP_SOURCES.MANUAL;
 const hasTrackerOwnership = (id: number) =>
   !!ownershipStore.getTrackerEntry(id);
 
 const getOwnershipSourceLabel = (id: number) => {
   const source = getOwnershipSource(id);
-  if (source === "manual") {
+  if (source === OWNERSHIP_SOURCES.MANUAL) {
     return "Manual";
   }
-  if (source === "tracker") {
+  if (source === OWNERSHIP_SOURCES.TRACKER) {
     return "Tracker";
   }
   return "None";
@@ -86,16 +88,16 @@ const getOwnershipSourceLabel = (id: number) => {
 const getPortraitValue = (id: number) =>
   ownershipStore.getEffectiveEntry(id)?.portrait ?? 0;
 const isPortraitDisabled = (id: number) =>
-  ownershipStore.getEffectiveEntry(id)?.source !== "manual";
+  ownershipStore.getEffectiveEntry(id)?.source !== OWNERSHIP_SOURCES.MANUAL;
 const getOwnershipToggleLabel = (id: number) =>
   hasTrackerOwnership(id) ? "Overwrite" : "Owned";
 
 const getSourceBadgeClass = (id: number) => {
   const source = getOwnershipSource(id);
-  if (source === "manual") {
+  if (source === OWNERSHIP_SOURCES.MANUAL) {
     return "border-amber-400/50 bg-amber-400/12 text-amber-100";
   }
-  if (source === "tracker") {
+  if (source === OWNERSHIP_SOURCES.TRACKER) {
     return "border-cyan-400/50 bg-cyan-400/12 text-cyan-100";
   }
   return "border-slate-500/40 bg-slate-500/10 text-slate-300";
@@ -103,10 +105,10 @@ const getSourceBadgeClass = (id: number) => {
 
 const getSourceDotClass = (id: number) => {
   const source = getOwnershipSource(id);
-  if (source === "manual") {
+  if (source === OWNERSHIP_SOURCES.MANUAL) {
     return "bg-amber-300";
   }
-  if (source === "tracker") {
+  if (source === OWNERSHIP_SOURCES.TRACKER) {
     return "bg-cyan-300";
   }
   return "bg-slate-400";
@@ -114,10 +116,10 @@ const getSourceDotClass = (id: number) => {
 
 const getRowClass = (id: number) => {
   const source = getOwnershipSource(id);
-  if (source === "manual") {
+  if (source === OWNERSHIP_SOURCES.MANUAL) {
     return "border-l-4 border-l-amber-400/90";
   }
-  if (source === "tracker") {
+  if (source === OWNERSHIP_SOURCES.TRACKER) {
     return "border-l-4 border-l-cyan-400/90";
   }
   return "border-l-4 border-l-slate-500/35";
