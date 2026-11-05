@@ -4,6 +4,19 @@ import { useDataStore } from "@/stores/dataStore";
 import { useArcanistOwnershipStore } from "@/stores/arcanistOwnershipStore";
 import { resolveTeam } from "@/composables/teams";
 import { getArcanistI0ImagePath } from "@/composables/images";
+import {
+  bannerBorderClass,
+  completableWithBanner,
+} from "@/utils/bannerData";
+
+type ResolvedTeam = ReturnType<typeof resolveTeam>;
+
+const teamBorderClass = (r: ResolvedTeam) => {
+  if (r.ownedCount === r.total) {
+    return "border-success";
+  }
+  return completableWithBanner(r) ? "border-yellow-400" : "border-transparent";
+};
 
 const dataStore = useDataStore();
 const ownershipStore = useArcanistOwnershipStore();
@@ -82,9 +95,7 @@ const scrapedDate = computed(() =>
           v-for="r in teams"
           :key="r.team.name"
           class="rounded-lg p-3 bg-base-200 border-2"
-          :class="
-            r.ownedCount === r.total ? 'border-success' : 'border-transparent'
-          "
+          :class="teamBorderClass(r)"
         >
           <div class="flex justify-between gap-2 mb-2">
             <span class="font-semibold">{{ r.team.name }}</span>
@@ -106,24 +117,35 @@ const scrapedDate = computed(() =>
                     v-for="opt in slot.options"
                     :key="opt.name"
                     class="text-center w-16"
-                    :class="{ 'opacity-30 grayscale': !opt.owned }"
                     :title="
                       opt.owned
                         ? opt.name
                         : `${opt.name} (${$t('teams-missing')})`
                     "
                   >
-                    <img
+                    <div
                       v-if="opt.arcanistId !== null"
-                      :src="getArcanistI0ImagePath(opt.arcanistId)"
-                      :alt="opt.name"
-                      class="w-16 h-16 rounded-full object-cover object-top"
-                    />
+                      class="w-16 h-16 rounded-full overflow-hidden"
+                      :class="bannerBorderClass(opt.name)"
+                    >
+                      <img
+                        :src="getArcanistI0ImagePath(opt.arcanistId)"
+                        :alt="opt.name"
+                        class="w-full h-full object-cover object-top"
+                        :class="{ 'opacity-30 grayscale': !opt.owned }"
+                      />
+                    </div>
                     <div
                       v-else
                       class="w-16 h-16 rounded-full bg-base-300"
+                      :class="{ 'opacity-30': !opt.owned }"
                     ></div>
-                    <div class="text-xs truncate">{{ opt.name }}</div>
+                    <div
+                      class="text-xs truncate"
+                      :class="{ 'opacity-30': !opt.owned }"
+                    >
+                      {{ opt.name }}
+                    </div>
                   </div>
                 </div>
               </div>

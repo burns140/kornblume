@@ -5,6 +5,7 @@ import { useArcanistOwnershipStore } from "@/stores/arcanistOwnershipStore";
 import { getArcanistI0ImagePath } from "@/composables/images";
 import { resolveCharacterTiers } from "@/composables/characterTiers";
 import { findTeamsWithCharacter, resolveTeam } from "@/composables/teams";
+import { bannerBorderClass } from "@/utils/bannerData";
 import type { ITeam } from "@/types";
 
 const dataStore = useDataStore();
@@ -165,23 +166,30 @@ const scrapedDate = computed(() =>
               :class="[
                 entry.owned
                   ? 'border-success'
-                  : 'border-transparent opacity-70 grayscale',
+                  : 'border-transparent',
                 { 'bg-base-300': selectedName === entry.character.name },
               ]"
               :title="entry.character.name"
               @click="selectCharacter(entry.character.name, $event)"
             >
-              <img
+              <div
                 v-if="entry.arcanistId !== null"
-                :src="getArcanistI0ImagePath(entry.arcanistId)"
-                :alt="entry.character.name"
-                class="w-12 h-12 rounded-full object-cover object-top shrink-0"
-              />
+                class="w-12 h-12 rounded-full overflow-hidden shrink-0"
+                :class="bannerBorderClass(entry.character.name)"
+              >
+                <img
+                  :src="getArcanistI0ImagePath(entry.arcanistId)"
+                  :alt="entry.character.name"
+                  class="w-full h-full object-cover object-top"
+                  :class="{ 'opacity-70 grayscale': !entry.owned }"
+                />
+              </div>
               <div
                 v-else
                 class="w-12 h-12 rounded-full bg-base-300 shrink-0"
+                :class="{ 'opacity-70': !entry.owned }"
               ></div>
-              <div class="min-w-0">
+              <div class="min-w-0" :class="{ 'opacity-70': !entry.owned }">
                 <div class="text-sm font-medium truncate">
                   {{ entry.character.name }}
                 </div>
@@ -236,16 +244,27 @@ const scrapedDate = computed(() =>
             v-for="opt in slot.options"
             :key="opt.name"
             class="text-center w-16"
-            :class="{ 'opacity-30 grayscale': !opt.owned }"
           >
-            <img
+            <div
               v-if="opt.arcanistId !== null"
-              :src="getArcanistI0ImagePath(opt.arcanistId)"
-              :alt="opt.name"
-              class="w-16 h-16 rounded-full object-cover object-top"
-            />
-            <div v-else class="w-16 h-16 rounded-full bg-base-300"></div>
-            <div class="text-xs truncate">{{ opt.name }}</div>
+              class="w-16 h-16 rounded-full overflow-hidden"
+              :class="bannerBorderClass(opt.name)"
+            >
+              <img
+                :src="getArcanistI0ImagePath(opt.arcanistId)"
+                :alt="opt.name"
+                class="w-full h-full object-cover object-top"
+                :class="{ 'opacity-30 grayscale': !opt.owned }"
+              />
+            </div>
+            <div
+              v-else
+              class="w-16 h-16 rounded-full bg-base-300"
+              :class="{ 'opacity-30': !opt.owned }"
+            ></div>
+            <div class="text-xs truncate" :class="{ 'opacity-30': !opt.owned }">
+              {{ opt.name }}
+            </div>
           </div>
         </div>
       </div>
