@@ -19,6 +19,77 @@ export interface IResolvedTeam {
   total: number;
 }
 
+// Archetype sheet names carry an engraving suffix, e.g. "Beryl (E1)"
+const stripEngraving = (name: string) => name.replace(/\s*\(E\d+\)\s*$/i, "");
+
+export function parseArchetypeTeams(csv: string): ITeam[] {
+  const rows: string[][] = [];
+  let row: string[] = [];
+  let cell = "";
+  let inQuotes = false;
+
+  for (let i = 0; i < csv.length; i += 1) {
+    const char = csv[i];
+    if (inQuotes) {
+      if (char === '"' && csv[i + 1] === '"') {
+        cell += '"';
+        i += 1;
+      } else if (char === '"') {
+        inQuotes = false;
+      } else {
+        cell += char;
+      }
+    } else if (char === '"') {
+      inQuotes = true;
+    } else if (char === ",") {
+      row.push(cell);
+      cell = "";
+    } else if (char === "\n") {
+      row.push(cell.replace(/\r$/, ""));
+      rows.push(row);
+      row = [];
+      cell = "";
+    } else {
+      cell += char;
+    }
+  }
+
+  if (cell || row.length) {
+    row.push(cell.replace(/\r$/, ""));
+    rows.push(row);
+  }
+
+  const teams: ITeam[] = [];
+  for (let i = 0; i + 2 < rows.length; i += 1) {
+    const [name, ...remaining] = rows[i].map((value) => value.trim());
+    if (!name || remaining.some(Boolean)) {
+      continue;
+    }
+
+    const roleRow = rows[i + 1];
+    const characterRow = rows[i + 2];
+    const slots = [0, 2, 4, 6]
+      .filter((column) => roleRow[column]?.trim() && characterRow[column]?.trim())
+      .map((column) => {
+        const characterName = stripEngraving(characterRow[column].trim());
+        return [{ name: characterName, slug: normalizeName(characterName) }];
+      });
+
+    if (slots.length < 2) {
+      continue;
+    }
+
+    teams.push({
+      name,
+      tier: "",
+      damageType: "",
+      slots,
+    });
+  }
+
+  return teams;
+}
+
 export function findTeamsWithCharacter(
   teams: ITeam[],
   characterName: string,

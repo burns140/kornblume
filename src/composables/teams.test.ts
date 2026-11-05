@@ -1,5 +1,9 @@
 import { describe, it, expect } from "vitest";
-import { findTeamsWithCharacter, resolveTeam } from "./teams";
+import {
+  findTeamsWithCharacter,
+  parseArchetypeTeams,
+  resolveTeam,
+} from "./teams";
 import type { IArcanist, ITeam } from "@/types";
 
 const arcanists = [
@@ -21,6 +25,55 @@ const team: ITeam = {
     [{ name: "Unknown", slug: "unknown" }],
   ],
 };
+
+describe("parseArchetypeTeams", () => {
+  it("extracts team slots from the archetype sheet layout", () => {
+    const csv = [
+      '"Conduit","","","","","","",""',
+      '"Utility","Essential","DPS","Negotiable","Utility","Negotiable","Sustain","Essential"',
+      '"Coppélia","","The Twins","","Hedone","","Everecho",""',
+      ',"Burn but Good","","","","","",""',
+      "",
+    ].join("\n");
+
+    expect(parseArchetypeTeams(csv)).toEqual([
+      {
+        name: "Conduit",
+        tier: "",
+        damageType: "",
+        slots: [
+          [{ name: "Coppélia", slug: "coppelia" }],
+          [{ name: "The Twins", slug: "thetwins" }],
+          [{ name: "Hedone", slug: "hedone" }],
+          [{ name: "Everecho", slug: "everecho" }],
+        ],
+      },
+    ]);
+  });
+
+  it("strips engraving suffixes from character names", () => {
+    const csv = [
+      '"Liang","","","","","","",""',
+      '"DPS","Essential","Utility","Essential","Sustain","Flexible","Utility","Flexible"',
+      '"Liang Yue (E1)","","Flutterpage (E12)","","Enigma","","Rhiannon",""',
+      "",
+    ].join("\n");
+
+    expect(
+      parseArchetypeTeams(csv)[0].slots.map((slot) => slot[0].name),
+    ).toEqual(["Liang Yue", "Flutterpage", "Enigma", "Rhiannon"]);
+  });
+
+  it("supports quoted commas and newlines in unrelated sheet cells", () => {
+    const csv = [
+      '"Intro, with a comma\nand another line"',
+      '"An ""quoted"" heading","","","","","","",""',
+      "",
+    ].join("\n");
+
+    expect(parseArchetypeTeams(csv)).toEqual([]);
+  });
+});
 
 describe("findTeamsWithCharacter", () => {
   const other: ITeam = {

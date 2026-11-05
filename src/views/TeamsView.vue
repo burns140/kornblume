@@ -2,12 +2,18 @@
 import { computed, ref } from "vue";
 import { useDataStore } from "@/stores/dataStore";
 import { useArcanistOwnershipStore } from "@/stores/arcanistOwnershipStore";
-import { resolveTeam } from "@/composables/teams";
+import { parseArchetypeTeams, resolveTeam } from "@/composables/teams";
 import { getArcanistI0ImagePath } from "@/composables/images";
 import {
   bannerBorderClass,
   completableWithBanner,
 } from "@/utils/bannerData";
+import type { ITeam } from "@/types";
+
+const archetypeSheetUrl =
+  "https://docs.google.com/spreadsheets/d/1e46cecjsIb1LO3Ybb6urlVUZKUk8R7yrgG9yXZS8-Ho/edit";
+const archetypeCsvUrl =
+  "https://docs.google.com/spreadsheets/d/1e46cecjsIb1LO3Ybb6urlVUZKUk8R7yrgG9yXZS8-Ho/gviz/tq?tqx=out:csv&sheet=Archetypes%20List%20(CN%204.0)&range=B13:I1000";
 
 type ResolvedTeam = ReturnType<typeof resolveTeam>;
 
@@ -21,9 +27,16 @@ const teamBorderClass = (r: ResolvedTeam) => {
 const dataStore = useDataStore();
 const ownershipStore = useArcanistOwnershipStore();
 const onlyBuildable = ref(false);
+const selectedSource = ref<"prydwen" | "archetypes">("prydwen");
+const archetypeTeams = ref<ITeam[]>([]);
+const archetypeLoading = ref(false);
+const archetypeError = ref("");
 
 const resolved = computed(() => {
-  const teams = dataStore.teams?.teams ?? [];
+  const teams =
+    selectedSource.value === "archetypes"
+      ? archetypeTeams.value
+      : dataStore.teams?.teams ?? [];
   return teams.map((team) =>
     resolveTeam(
       team,
@@ -33,7 +46,7 @@ const resolved = computed(() => {
   );
 });
 
-const tiers = computed(() => {
+const groups = computed(() => {
   const groups = new Map<string, typeof resolved.value>();
   for (const r of resolved.value) {
     const isBuildable = r.ownedCount >= r.total;
@@ -41,15 +54,48 @@ const tiers = computed(() => {
       continue;
     }
 
-    if (!groups.has(r.team.tier)) {
-      groups.set(r.team.tier, []);
+    const group = selectedSource.value === "archetypes" ? "" : r.team.tier;
+    if (!groups.has(group)) {
+      groups.set(group, []);
     }
 
-    groups.get(r.team.tier)!.push(r);
+    groups.get(group)!.push(r);
   }
 
   return [...groups.entries()];
 });
+
+async function loadArchetypeTeams() {
+  if (archetypeTeams.value.length > 0) {
+    return;
+  }
+
+  archetypeLoading.value = true;
+  archetypeError.value = "";
+  try {
+    const response = await fetch(archetypeCsvUrl);
+    if (!response.ok) {
+      throw new Error(`Request failed (${response.status})`);
+    }
+
+    const teams = parseArchetypeTeams(await response.text());
+    if (teams.length === 0) {
+      throw new Error("No teams were found in the spreadsheet");
+    }
+    archetypeTeams.value = teams;
+  } catch (error) {
+    archetypeError.value =
+      error instanceof Error ? error.message : String(error);
+  } finally {
+    archetypeLoading.value = false;
+  }
+}
+
+function onSourceChange() {
+  if (selectedSource.value === "archetypes") {
+    loadArchetypeTeams();
+  }
+}
 
 const scrapedDate = computed(() =>
   dataStore.teams
@@ -64,11 +110,27 @@ const scrapedDate = computed(() =>
       <p class="text-sm opacity-80">
         {{ $t("teams-role-help") }}
       </p>
+      <label class="flex items-center gap-2">
+        <span>{{ $t("teams-source-label") }}</span>
+        <select
+          v-model="selectedSource"
+          class="select select-bordered select-sm"
+          @change="onSourceChange"
+        >
+          <option value="prydwen">{{ $t("teams-source-prydwen") }}</option>
+          <option value="archetypes">
+            {{ $t("teams-source-archetypes") }}
+          </option>
+        </select>
+      </label>
       <label class="flex items-center gap-2 cursor-pointer">
         <input v-model="onlyBuildable" type="checkbox" class="checkbox" />
         {{ $t("teams-only-buildable") }}
       </label>
-      <div v-if="dataStore.teams" class="text-sm opacity-70">
+      <div
+        v-if="selectedSource === 'prydwen' && dataStore.teams"
+        class="text-sm opacity-70"
+      >
         {{ $t("teams-last-updated", { date: scrapedDate }) }} ·
         <a
           :href="dataStore.teams.source"
@@ -78,18 +140,43 @@ const scrapedDate = computed(() =>
           >{{ $t("teams-source") }}</a
         >
       </div>
+      <div
+        v-else-if="selectedSource === 'archetypes'"
+        class="text-sm opacity-70"
+      >
+        <a
+          :href="archetypeSheetUrl"
+          target="_blank"
+          rel="noopener"
+          class="link"
+          >{{ $t("teams-source") }}</a
+        >
+      </div>
     </div>
 
-    <p v-if="tiers.length === 0" class="opacity-70">
+    <p
+      v-if="selectedSource === 'archetypes' && archetypeLoading"
+      class="opacity-70"
+    >
+      {{ $t("teams-source-loading") }}
+    </p>
+    <p
+      v-else-if="selectedSource === 'archetypes' && archetypeError"
+      class="text-error"
+      role="alert"
+    >
+      {{ $t("teams-source-load-error", { error: archetypeError }) }}
+    </p>
+    <p v-else-if="groups.length === 0" class="opacity-70">
       {{ $t("teams-no-teams") }}
     </p>
 
     <section
-      v-for="[tier, teams] in tiers"
-      :key="tier"
+      v-for="[group, teams] in groups"
+      :key="group"
       class="mb-8 pt-5 border-t-2 border-white/40 first:border-t-0 first:pt-0"
     >
-      <h2 class="text-2xl font-bold mb-3">{{ tier }}</h2>
+      <h2 v-if="group" class="text-2xl font-bold mb-3">{{ group }}</h2>
       <div class="grid gap-3 grid-cols-1 lg:grid-cols-2">
         <div
           v-for="r in teams"
