@@ -1,5 +1,5 @@
 <script setup lang="ts" name="PlannerSelector">
-import { ref, computed } from "vue";
+import { computed } from "vue";
 import {
   useCalculation,
   mergeResults,
@@ -7,6 +7,9 @@ import {
 } from "@/composables/calculations";
 import { useScreen } from "@/composables/useScreen";
 import { ISelectedArcanist } from "@/types";
+import { useArcanistOwnershipStore } from "@/stores/arcanistOwnershipStore";
+import { useDataStore } from "@/stores/dataStore";
+import { isPlannerGoalComplete } from "@/utils/plannerProgress";
 import ArcanistIconToggle from "@/components/arcanist/ArcanistIconToggle.vue";
 import ItemGoalIcon from "@/components/item/ItemGoalIcon.vue";
 
@@ -19,7 +22,36 @@ const props = defineProps({
 
 const emit = defineEmits(["open-edit-overlay"]);
 
-const arcanists = ref(props.selectedArcanists);
+const ownershipStore = useArcanistOwnershipStore();
+const dataStore = useDataStore();
+const arcanists = computed(() => props.selectedArcanists);
+const arcanistGroups = computed(() => {
+  const characters = new Map(dataStore.arcanists.map((arc) => [arc.Id, arc]));
+  const groups = [
+    {
+      key: "border-legend-owned",
+      sections: [
+        { key: "planner-complete", arcanists: [] as ISelectedArcanist[] },
+        { key: "planner-in-progress", arcanists: [] as ISelectedArcanist[] },
+      ],
+    },
+    {
+      key: "planner-not-owned",
+      sections: [
+        { key: "planner-complete", arcanists: [] as ISelectedArcanist[] },
+        { key: "planner-in-progress", arcanists: [] as ISelectedArcanist[] },
+      ],
+    },
+  ];
+  for (const arcanist of arcanists.value) {
+    const ownershipIndex = ownershipStore.getEffectiveEntry(arcanist.Id) ? 0 : 1;
+    const progressIndex = isPlannerGoalComplete(arcanist, characters.get(arcanist.Id))
+      ? 0
+      : 1;
+    groups[ownershipIndex].sections[progressIndex].arcanists.push(arcanist);
+  }
+  return groups;
+});
 const { hasFinePointer } = useScreen();
 
 const handleLeftClick = (arcanist: ISelectedArcanist) => {
@@ -48,20 +80,39 @@ const totalMaterials = computed(() => {
 
 <template>
   <div class="p-2">
-    <div class="flex flex-wrap justify-center space-x-2">
-      <ArcanistIconToggle
-        v-for="arcanist in arcanists"
-        :key="arcanist.Id"
-        :arcanist="arcanist.Id"
-        :visible="arcanist.isVisible"
-        @click="handleLeftClick(arcanist)"
-        @contextmenu.prevent="handleRightClick(arcanist)"
-        class="mb-2"
-      />
-      <div
-        class="flex justify-center items-center"
-        v-show="arcanistsLength > 0"
+    <div v-if="arcanistsLength > 0" class="flex flex-col gap-3">
+      <section
+        v-for="group in arcanistGroups"
+        :key="group.key"
+        class="text-center"
       >
+        <h3 class="text-sm font-semibold text-slate-300">
+          {{ $t(group.key) }}
+        </h3>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-1">
+          <div
+            v-for="section in group.sections"
+            :key="section.key"
+            class="rounded-md border border-base-content/30 p-2"
+          >
+            <h4 class="text-sm text-slate-300">{{ $t(section.key) }}</h4>
+            <div class="flex flex-wrap justify-center gap-2 mt-1">
+              <ArcanistIconToggle
+                v-for="arcanist in section.arcanists"
+                :key="arcanist.Id"
+                :arcanist="arcanist.Id"
+                :visible="arcanist.isVisible"
+                @click="handleLeftClick(arcanist)"
+                @contextmenu.prevent="handleRightClick(arcanist)"
+              />
+              <span v-if="section.arcanists.length === 0" class="text-slate-400">
+                &mdash;
+              </span>
+            </div>
+          </div>
+        </div>
+      </section>
+      <div class="flex justify-center items-center">
         <button
           class="btn btn-ghost custom-gradient-button btn-sm text-white"
           onclick="goalMaterials.showModal()"

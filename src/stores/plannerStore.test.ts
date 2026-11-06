@@ -45,6 +45,7 @@ describe("usePlannerStore", () => {
           goalResonance: 10,
           frequency: [],
           euphoria,
+          completedEuphorias: euphoria,
           currentMastery: mastery,
           goalMastery: mastery,
         },

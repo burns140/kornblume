@@ -52,6 +52,7 @@ export const usePlannerStore = defineStore("planner", {
         goalResonance: 10,
         frequency: [],
         euphoria: withEuphoria ? lastEuphoria : [],
+        completedEuphorias: withEuphoria ? lastEuphoria : [],
         currentMastery: mastery,
         goalMastery: mastery,
       });

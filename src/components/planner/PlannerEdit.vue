@@ -58,6 +58,7 @@ const selectedGoalResonance = ref(props.selectedArcanist.goalResonance);
 const selectedFrequency = ref(props.selectedArcanist.frequency ?? []);
 const selectedVisible = ref(props.selectedArcanist.isVisible);
 const selectedEuphoria = ref(props.selectedArcanist.euphoria ?? []);
+const completedEuphorias = ref([...(props.selectedArcanist.completedEuphorias ?? [])]);
 const selectedCurrentMastery = ref(props.selectedArcanist.currentMastery);
 const selectedGoalMastery = ref(props.selectedArcanist.goalMastery);
 
@@ -161,6 +162,9 @@ const levelUpArcanist = () => {
     selectedCurrentInsight.value = selectedGoalInsight.value;
     selectedCurrentResonance.value = selectedGoalResonance.value;
     selectedFrequency.value = [];
+    completedEuphorias.value = [
+      ...new Set([...completedEuphorias.value, ...selectedEuphoria.value]),
+    ];
     selectedEuphoria.value = [];
     selectedCurrentMastery.value = selectedGoalMastery.value;
     useGlobalStore().setIsEditingPlanner(false);
@@ -254,6 +258,7 @@ const editingArcanist = computed(() => ({
   goalResonance: selectedGoalResonance.value,
   frequency: selectedFrequency.value,
   euphoria: selectedEuphoria.value,
+  completedEuphorias: completedEuphorias.value,
   currentMastery: selectedCurrentMastery.value,
   goalMastery: selectedGoalMastery.value,
 }));
@@ -760,6 +765,19 @@ watch(
                 >
                   {{ $t("euphoria-requirement") }}
                 </div>
+
+                <label
+                  v-if="euphoriaOptions.length > 0"
+                  class="flex items-center justify-center gap-2"
+                >
+                  <input
+                    v-model="completedEuphorias"
+                    type="checkbox"
+                    class="checkbox checkbox-info checkbox-sm"
+                    :value="euphoriaOptions[euphoriaOptions.length - 1].Id"
+                  />
+                  <span>{{ $t("planner-euphoria-completed") }}</span>
+                </label>
 
                 <div class="mt-2 flex justify-center items-center leading-none">
                   <SelectList
