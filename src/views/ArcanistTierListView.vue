@@ -1,16 +1,34 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from "vue";
+import { storeToRefs } from "pinia";
 import { useDataStore } from "@/stores/dataStore";
 import { useArcanistOwnershipStore } from "@/stores/arcanistOwnershipStore";
+import { useViewPreferencesStore } from "@/stores/viewPreferencesStore";
 import { getArcanistI0ImagePath } from "@/composables/images";
-import { resolveCharacterTiers } from "@/composables/characterTiers";
+import {
+  resolveCharacterTiers,
+  sheetModes,
+  withSheetMode,
+} from "@/composables/characterTiers";
 import { findTeamsWithCharacter, resolveTeam } from "@/composables/teams";
 import { bannerBorderClass } from "@/utils/bannerData";
+import { SHEET_GIDS, sheetEditUrl } from "@/utils/googleSheet";
+import ArcanistPortraitCard from "@/components/arcanist/ArcanistPortraitCard.vue";
+import BorderLegend from "@/components/BorderLegend.vue";
 import type { ITeam } from "@/types";
+
+const sheetUrl = sheetEditUrl(SHEET_GIDS.characterTiers);
 
 const dataStore = useDataStore();
 const ownershipStore = useArcanistOwnershipStore();
-const onlyOwned = ref(false);
+const {
+  characterTiersSource: selectedSource,
+  characterTiersMode: selectedMode,
+  characterTiersOnlyOwned: onlyOwned,
+  characterTiersPortraits: usePortraits,
+} = storeToRefs(useViewPreferencesStore());
+const sheetLoading = ref(false);
+const sheetError = ref("");
 const selectedName = ref<string | null>(null);
 const hoveredTeam = ref<ITeam | null>(null);
 const root = ref<HTMLElement | null>(null);
@@ -29,7 +47,13 @@ function closeOnOutsideClick(event: MouseEvent) {
   }
 }
 
-onMounted(() => document.addEventListener("click", closeOnOutsideClick));
+onMounted(() => {
+  document.addEventListener("click", closeOnOutsideClick);
+  // The remembered source may need its live data fetched on a fresh page load
+  if (selectedSource.value === "sheet") {
+    loadSheet();
+  }
+});
 onBeforeUnmount(() =>
   document.removeEventListener("click", closeOnOutsideClick),
 );
@@ -50,15 +74,21 @@ function sidePosition(rect: DOMRect) {
 
 const isOwned = (id: number) => !!ownershipStore.getEffectiveEntry(id);
 
+// The team panel follows the selected source so teams match the tier list
+const sourceTeams = computed(() =>
+  selectedSource.value === "sheet"
+    ? dataStore.sheetTeams
+    : dataStore.teams?.teams ?? [],
+);
+
 const selectedTeams = computed(() =>
   selectedName.value
-    ? findTeamsWithCharacter(
-        dataStore.teams?.teams ?? [],
-        selectedName.value,
-      ).map((team) => {
-        const resolved = resolveTeam(team, dataStore.arcanists, isOwned);
-        return { team, buildable: resolved.ownedCount === resolved.total };
-      })
+    ? findTeamsWithCharacter(sourceTeams.value, selectedName.value).map(
+        (team) => {
+          const resolved = resolveTeam(team, dataStore.arcanists, isOwned);
+          return { team, buildable: resolved.ownedCount === resolved.total };
+        },
+      )
     : [],
 );
 
@@ -99,12 +129,37 @@ function showFlyout(team: ITeam, event: MouseEvent) {
 
 const tierGroups = computed(() => {
   return resolveCharacterTiers(
-    dataStore.characterTiers?.characters ?? [],
+    selectedSource.value === "sheet"
+      ? withSheetMode(dataStore.sheetCharacterTiers, selectedMode.value)
+      : dataStore.characterTiers?.characters ?? [],
     dataStore.arcanists,
     isOwned,
     onlyOwned.value,
   );
 });
+
+async function loadSheet(force = false) {
+  sheetLoading.value = true;
+  sheetError.value = "";
+  try {
+    await Promise.all([
+      dataStore.loadSheetCharacterTiers(force),
+      dataStore.loadSheetTeams(force),
+    ]);
+  } catch (error) {
+    sheetError.value = error instanceof Error ? error.message : String(error);
+  } finally {
+    sheetLoading.value = false;
+  }
+}
+
+function onSourceChange() {
+  selectedName.value = null;
+  hoveredTeam.value = null;
+  if (selectedSource.value === "sheet") {
+    loadSheet();
+  }
+}
 
 const scrapedDate = computed(() =>
   dataStore.characterTiers
@@ -117,16 +172,54 @@ const scrapedDate = computed(() =>
   <div ref="root" class="container mx-auto px-4 py-6 relative">
     <div class="flex flex-wrap items-center justify-between gap-3 mb-5">
       <p class="text-sm opacity-80">
-        {{ $t("character-tier-list-description") }}
-        <span v-if="dataStore.characterTiers">
-          ({{ dataStore.characterTiers.version }})
-        </span>
+        <template v-if="selectedSource === 'sheet'">
+          {{ $t("character-tier-list-sheet-description") }}
+        </template>
+        <template v-else>
+          {{ $t("character-tier-list-description") }}
+          <span v-if="dataStore.characterTiers">
+            ({{ dataStore.characterTiers.version }})
+          </span>
+        </template>
       </p>
+      <label class="flex items-center gap-2">
+        <span>{{ $t("character-tier-list-source-label") }}</span>
+        <select
+          v-model="selectedSource"
+          class="select select-bordered select-sm"
+          @change="onSourceChange"
+        >
+          <option value="prydwen">
+            {{ $t("character-tier-list-source-prydwen") }}
+          </option>
+          <option value="sheet">
+            {{ $t("character-tier-list-source-sheet") }}
+          </option>
+        </select>
+      </label>
+      <label v-if="selectedSource === 'sheet'" class="flex items-center gap-2">
+        <span>{{ $t("character-tier-list-mode-label") }}</span>
+        <select
+          v-model="selectedMode"
+          class="select select-bordered select-sm"
+        >
+          <option v-for="mode in sheetModes" :key="mode" :value="mode">
+            {{ $t(`character-tier-list-mode-${mode}`) }}
+          </option>
+        </select>
+      </label>
       <label class="flex items-center gap-2 cursor-pointer">
         <input v-model="onlyOwned" type="checkbox" class="checkbox" />
         {{ $t("character-tier-list-only-owned") }}
       </label>
-      <div v-if="dataStore.characterTiers" class="text-sm opacity-70">
+      <label class="flex items-center gap-2 cursor-pointer">
+        <input v-model="usePortraits" type="checkbox" class="checkbox" />
+        {{ $t("portrait-style") }}
+      </label>
+      <div
+        v-if="selectedSource === 'prydwen' && dataStore.characterTiers"
+        class="text-sm opacity-70"
+      >
         {{ $t("character-tier-list-last-updated", { date: scrapedDate }) }} ·
         <a
           :href="dataStore.characterTiers.source"
@@ -136,9 +229,43 @@ const scrapedDate = computed(() =>
           >{{ $t("teams-source") }}</a
         >
       </div>
+      <div v-else-if="selectedSource === 'sheet'" class="text-sm opacity-70">
+        <a :href="sheetUrl" target="_blank" rel="noopener" class="link">{{
+          $t("teams-source")
+        }}</a>
+        <template v-if="dataStore.sheetCharacterTiersFetchedAt">
+          ·
+          {{
+            $t("sheet-last-fetched", {
+              date: new Date(
+                dataStore.sheetCharacterTiersFetchedAt,
+              ).toLocaleString(),
+            })
+          }}
+        </template>
+        <button
+          class="btn btn-xs ml-2"
+          :disabled="sheetLoading"
+          @click="loadSheet(true)"
+        >
+          {{ $t("sheet-refresh") }}
+        </button>
+      </div>
     </div>
 
-    <p v-if="tierGroups.length === 0" class="opacity-70">
+    <BorderLegend card-border="owned" />
+
+    <p v-if="selectedSource === 'sheet' && sheetLoading" class="opacity-70">
+      {{ $t("character-tier-list-source-loading") }}
+    </p>
+    <p
+      v-else-if="selectedSource === 'sheet' && sheetError"
+      class="text-error"
+      role="alert"
+    >
+      {{ $t("character-tier-list-source-load-error", { error: sheetError }) }}
+    </p>
+    <p v-else-if="tierGroups.length === 0" class="opacity-70">
       {{ $t("character-tier-list-no-characters") }}
     </p>
 
@@ -148,7 +275,10 @@ const scrapedDate = computed(() =>
       class="mb-8 pt-5 border-t-2 border-white/40 first:border-t-0 first:pt-0"
     >
       <h2 class="text-2xl font-bold mb-3">{{ group.tier }}</h2>
-      <div class="grid gap-4 grid-cols-1 sm:grid-cols-2 xl:grid-cols-4">
+      <div
+        class="grid gap-4 grid-cols-1 sm:grid-cols-2"
+        :class="usePortraits ? '2xl:grid-cols-4 xl:grid-cols-3' : 'xl:grid-cols-3'"
+      >
         <section
           v-for="roleGroup in group.roles"
           :key="roleGroup.role"
@@ -157,7 +287,14 @@ const scrapedDate = computed(() =>
           <h3 class="font-semibold mb-3">
             {{ $t(`character-tier-role-${roleGroup.role}`) }}
           </h3>
-          <div class="grid gap-2 grid-cols-2">
+          <div
+            class="grid gap-2"
+            :class="
+              usePortraits
+                ? 'grid-cols-[repeat(auto-fill,minmax(10rem,1fr))]'
+                : 'grid-cols-2'
+            "
+          >
             <div
               v-for="entry in roleGroup.characters"
               :key="entry.character.slug"
@@ -172,11 +309,22 @@ const scrapedDate = computed(() =>
               :title="entry.character.name"
               @click="selectCharacter(entry.character.name, $event)"
             >
+              <ArcanistPortraitCard
+                v-if="usePortraits && entry.arcanistId !== null"
+                :arcanist-id="entry.arcanistId"
+                :name="entry.character.name"
+                :owned="entry.owned"
+                show-name
+                :border-class="bannerBorderClass(entry.character.name)"
+              />
               <div
-                v-if="entry.arcanistId !== null"
-                class="w-12 h-12 rounded-full overflow-hidden shrink-0"
-                :class="bannerBorderClass(entry.character.name)"
+                v-else-if="entry.arcanistId !== null"
+                class="relative w-12 h-12 rounded-full overflow-hidden shrink-0"
               >
+                <div
+                  class="absolute inset-0 z-10 rounded-full pointer-events-none"
+                  :class="bannerBorderClass(entry.character.name)"
+                ></div>
                 <img
                   :src="getArcanistI0ImagePath(entry.arcanistId)"
                   :alt="entry.character.name"
@@ -189,15 +337,56 @@ const scrapedDate = computed(() =>
                 class="w-12 h-12 rounded-full bg-base-300 shrink-0"
                 :class="{ 'opacity-70': !entry.owned }"
               ></div>
-              <div class="min-w-0" :class="{ 'opacity-70': !entry.owned }">
+              <div
+                v-if="usePortraits && entry.arcanistId !== null"
+                class="min-w-0 flex flex-col gap-1"
+                :class="{ 'opacity-70': !entry.owned }"
+              >
+                <div
+                  v-if="entry.character.score !== undefined"
+                  class="text-2xl font-bold"
+                >
+                  {{
+                    selectedMode === "overall"
+                      ? entry.character.score.toFixed(1)
+                      : entry.character.score
+                  }}
+                </div>
+                <div
+                  v-for="tag in entry.character.tags
+                    .split(',')
+                    .map((t) => t.trim())
+                    .filter(Boolean)"
+                  :key="tag"
+                  class="text-sm leading-tight"
+                >
+                  {{ tag }}
+                </div>
+              </div>
+              <div v-else class="min-w-0" :class="{ 'opacity-70': !entry.owned }">
                 <div class="text-sm font-medium truncate">
                   {{ entry.character.name }}
                 </div>
                 <div
-                  v-if="entry.character.tags"
-                  class="text-xs opacity-70 truncate"
+                  v-if="entry.character.score !== undefined || entry.character.tags"
+                  class="text-xs truncate"
                 >
-                  {{ entry.character.tags }}
+                  <span
+                    v-if="entry.character.score !== undefined"
+                    class="text-base font-bold"
+                    >{{
+                      selectedMode === "overall"
+                        ? entry.character.score.toFixed(1)
+                        : entry.character.score
+                    }}</span
+                  >
+                  <span
+                    v-if="entry.character.score !== undefined && entry.character.tags"
+                    class="opacity-70"
+                  >
+                    ·
+                  </span>
+                  <span class="opacity-70">{{ entry.character.tags }}</span>
                 </div>
               </div>
             </div>
@@ -245,11 +434,23 @@ const scrapedDate = computed(() =>
             :key="opt.name"
             class="text-center w-16"
           >
+            <ArcanistPortraitCard
+              v-if="usePortraits && opt.arcanistId !== null"
+              class="mx-auto"
+              :arcanist-id="opt.arcanistId"
+              :name="opt.name"
+              :owned="opt.owned"
+              show-name
+              :border-class="bannerBorderClass(opt.name)"
+            />
             <div
-              v-if="opt.arcanistId !== null"
-              class="w-16 h-16 rounded-full overflow-hidden"
-              :class="bannerBorderClass(opt.name)"
+              v-else-if="opt.arcanistId !== null"
+              class="relative w-16 h-16 rounded-full overflow-hidden"
             >
+              <div
+                class="absolute inset-0 z-10 rounded-full pointer-events-none"
+                :class="bannerBorderClass(opt.name)"
+              ></div>
               <img
                 :src="getArcanistI0ImagePath(opt.arcanistId)"
                 :alt="opt.name"
@@ -262,7 +463,11 @@ const scrapedDate = computed(() =>
               class="w-16 h-16 rounded-full bg-base-300"
               :class="{ 'opacity-30': !opt.owned }"
             ></div>
-            <div class="text-xs truncate" :class="{ 'opacity-30': !opt.owned }">
+            <div
+              v-if="!(usePortraits && opt.arcanistId !== null)"
+              class="text-xs truncate"
+              :class="{ 'opacity-30': !opt.owned }"
+            >
               {{ opt.name }}
             </div>
           </div>

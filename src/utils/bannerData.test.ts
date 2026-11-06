@@ -40,6 +40,14 @@ describe("banner data", () => {
     expect(bannerBorderClass("Nobody")).toBe("");
   });
 
+  it("ignores the Euphoria suffix when looking up banners", () => {
+    expect(isOnCurrentBanner("Recoleta (E1)")).toBe(true);
+    expect(bannerBorderClass("Moldir (E1)")).toBe(
+      bannerBorderClass("Moldir"),
+    );
+    expect(bannerBorderClass("Moldir (E1)")).toContain("violet");
+  });
+
   it("assigns the current banner types", () => {
     expect(currentBanners.hedone).toBe("event");
     expect(currentBanners.ulrich).toBe("rerun");

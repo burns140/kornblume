@@ -1,3 +1,5 @@
+import { stripEuphoria } from "@/utils/teamMatching";
+
 export const bannerList = [
   // limited
   "One Gram of Curiosity",
@@ -185,20 +187,20 @@ export const currentBanners: Record<string, BannerType> = {
   hissabeth: "euphoria",
 };
 
-const bannerBorderClasses: Record<BannerType, string> = {
-  event: "border-4 border-yellow-400",
-  rerun: "border-4 border-sky-400",
-  euphoria: "border-4 border-violet-400",
-  limited: "border-4 border-orange-400",
+export const bannerBorderClasses: Record<BannerType, string> = {
+  event: "border-2 border-yellow-400",
+  rerun: "border-2 border-sky-400",
+  euphoria: "border-2 border-violet-400",
+  limited: "border-2 border-orange-400",
 };
 
 export const bannerBorderClass = (name: string): string => {
-  const type = currentBanners[name.toLowerCase()];
+  const type = currentBanners[stripEuphoria(name).toLowerCase()];
   return type ? bannerBorderClasses[type] : "";
 };
 
 export const isOnCurrentBanner = (name: string): boolean =>
-  name.toLowerCase() in currentBanners;
+  stripEuphoria(name).toLowerCase() in currentBanners;
 
 interface IBannerCheckTeam {
   ownedCount: number;
