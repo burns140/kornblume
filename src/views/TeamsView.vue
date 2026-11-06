@@ -63,11 +63,11 @@ const groups = computed(() => {
   return [...groups.entries()];
 });
 
-async function loadArchetypeTeams() {
+async function loadArchetypeTeams(force = false) {
   archetypeLoading.value = true;
   archetypeError.value = "";
   try {
-    await dataStore.loadSheetTeams();
+    await dataStore.loadSheetTeams(force);
   } catch (error) {
     archetypeError.value =
       error instanceof Error ? error.message : String(error);
@@ -139,6 +139,21 @@ const scrapedDate = computed(() =>
           class="link"
           >{{ $t("teams-source") }}</a
         >
+        <template v-if="dataStore.sheetTeamsFetchedAt">
+          ·
+          {{
+            $t("sheet-last-fetched", {
+              date: new Date(dataStore.sheetTeamsFetchedAt).toLocaleString(),
+            })
+          }}
+        </template>
+        <button
+          class="btn btn-xs ml-2"
+          :disabled="archetypeLoading"
+          @click="loadArchetypeTeams(true)"
+        >
+          {{ $t("sheet-refresh") }}
+        </button>
       </div>
     </div>
 

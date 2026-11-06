@@ -20,6 +20,8 @@ interface IDataStore {
   teams: ITeamsData | null;
   sheetCharacterTiers: ICharacterTier[];
   sheetTeams: ITeam[];
+  sheetCharacterTiersFetchedAt: number;
+  sheetTeamsFetchedAt: number;
   arcanists: IArcanists;
   stages: IStages;
   stages1_4_greedy: IStages;
@@ -32,6 +34,8 @@ interface IDataStore {
   psychubes: IPsychubes;
   shops: IShops;
 }
+
+const SHEET_CACHE_MAX_AGE_MS = 24 * 60 * 60 * 1000;
 
 const getDataSize = (data) => {
   if (!data) {
@@ -48,6 +52,8 @@ export const useDataStore = defineStore("dataStore", {
     teams: null,
     sheetCharacterTiers: [],
     sheetTeams: [],
+    sheetCharacterTiersFetchedAt: 0,
+    sheetTeamsFetchedAt: 0,
     arcanists: [],
     stages: {},
     stages1_4_greedy: {},
@@ -81,9 +87,14 @@ export const useDataStore = defineStore("dataStore", {
         modules.map((module) => this.checkAndLoadJsonData(module)),
       );
     },
-    // Community spreadsheet data is fetched live and cached for the session
-    async loadSheetTeams() {
-      if (this.sheetTeams.length > 0) {
+    // Community spreadsheet data is cached in localStorage and only
+    // re-fetched when older than SHEET_CACHE_MAX_AGE_MS or when forced
+    async loadSheetTeams(force = false) {
+      if (
+        !force &&
+        this.sheetTeams.length > 0 &&
+        Date.now() - this.sheetTeamsFetchedAt < SHEET_CACHE_MAX_AGE_MS
+      ) {
         return;
       }
       const teams = parseArchetypeTeams(
@@ -93,9 +104,14 @@ export const useDataStore = defineStore("dataStore", {
         throw new Error("No teams were found in the spreadsheet");
       }
       this.sheetTeams = teams;
+      this.sheetTeamsFetchedAt = Date.now();
     },
-    async loadSheetCharacterTiers() {
-      if (this.sheetCharacterTiers.length > 0) {
+    async loadSheetCharacterTiers(force = false) {
+      if (
+        !force &&
+        this.sheetCharacterTiers.length > 0 &&
+        Date.now() - this.sheetCharacterTiersFetchedAt < SHEET_CACHE_MAX_AGE_MS
+      ) {
         return;
       }
       const characters = parseSheetCharacterTiers(
@@ -105,6 +121,15 @@ export const useDataStore = defineStore("dataStore", {
         throw new Error("No characters were found in the spreadsheet");
       }
       this.sheetCharacterTiers = characters;
+      this.sheetCharacterTiersFetchedAt = Date.now();
     },
+  },
+  persist: {
+    paths: [
+      "sheetCharacterTiers",
+      "sheetCharacterTiersFetchedAt",
+      "sheetTeams",
+      "sheetTeamsFetchedAt",
+    ],
   },
 });

@@ -130,13 +130,13 @@ const tierGroups = computed(() => {
   );
 });
 
-async function loadSheet() {
+async function loadSheet(force = false) {
   sheetLoading.value = true;
   sheetError.value = "";
   try {
     await Promise.all([
-      dataStore.loadSheetCharacterTiers(),
-      dataStore.loadSheetTeams(),
+      dataStore.loadSheetCharacterTiers(force),
+      dataStore.loadSheetTeams(force),
     ]);
   } catch (error) {
     sheetError.value = error instanceof Error ? error.message : String(error);
@@ -213,6 +213,23 @@ const scrapedDate = computed(() =>
         <a :href="sheetUrl" target="_blank" rel="noopener" class="link">{{
           $t("teams-source")
         }}</a>
+        <template v-if="dataStore.sheetCharacterTiersFetchedAt">
+          ·
+          {{
+            $t("sheet-last-fetched", {
+              date: new Date(
+                dataStore.sheetCharacterTiersFetchedAt,
+              ).toLocaleString(),
+            })
+          }}
+        </template>
+        <button
+          class="btn btn-xs ml-2"
+          :disabled="sheetLoading"
+          @click="loadSheet(true)"
+        >
+          {{ $t("sheet-refresh") }}
+        </button>
       </div>
     </div>
 

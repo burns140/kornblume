@@ -196,6 +196,8 @@
   "teams-source-prydwen": "Prydwen tier list",
   "teams-source-archetypes": "Community list",
   "teams-source-loading": "Loading archetype teams...",
+  "sheet-refresh": "Refresh",
+  "sheet-last-fetched": "Fetched {date}",
   "teams-source-load-error": "Could not load archetype teams: {error}",
   "teams-only-buildable": "Only teams I can build",
   "teams-last-updated": "Teams last updated {date}",
