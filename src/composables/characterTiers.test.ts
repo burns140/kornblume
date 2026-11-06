@@ -4,6 +4,7 @@ import {
   parseSheetCharacterTiers,
   resolveCharacterTiers,
   sheetScoreTier,
+  withSheetMode,
 } from "./characterTiers";
 
 const arcanists = [
@@ -68,6 +69,7 @@ describe("parseSheetCharacterTiers", () => {
         role: "support",
         tags: "Extra Round, AP Free",
         score: 10,
+        modeScores: { limbo: 9 },
       },
       {
         name: "Beryl (E1)",
@@ -76,6 +78,7 @@ describe("parseSheetCharacterTiers", () => {
         role: "damage-dealer",
         tags: "Lingering Glow",
         score: 9.5,
+        modeScores: { limbo: 9 },
       },
       {
         name: "J (E1)",
@@ -84,8 +87,21 @@ describe("parseSheetCharacterTiers", () => {
         role: "survival",
         tags: "Counter",
         score: 4.2,
+        modeScores: { limbo: 9 },
       },
     ]);
+  });
+
+  it("re-tiers by a mode subscore and drops characters without one", () => {
+    const characters = parseSheetCharacterTiers(csv);
+    expect(withSheetMode(characters, "overall")).toBe(characters);
+    const limbo = withSheetMode(characters, "limbo");
+    expect(limbo.map((c) => [c.score, c.tier])).toEqual([
+      [9, "9"],
+      [9, "9"],
+      [9, "9"],
+    ]);
+    expect(withSheetMode(characters, "raid")).toEqual([]);
   });
 
   it("keeps engraved and base versions of a character as separate entries", () => {

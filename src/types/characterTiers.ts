@@ -11,6 +11,7 @@ export interface ICharacterTier {
   role: ICharacterTierRole;
   tags: string;
   score?: number;
+  modeScores?: Partial<Record<string, number>>;
 }
 
 export interface ICharacterTierListData {

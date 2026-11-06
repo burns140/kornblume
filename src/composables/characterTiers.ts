@@ -49,6 +49,48 @@ export function sheetScoreTier(score: number): string {
   );
 }
 
+export type SheetMode =
+  | "overall"
+  | "limbo"
+  | "lucidscape"
+  | "raid"
+  | "roguelike"
+  | "reveries";
+
+export const sheetModes: SheetMode[] = [
+  "overall",
+  "limbo",
+  "lucidscape",
+  "raid",
+  "roguelike",
+  "reveries",
+];
+
+// Re-tiers sheet characters by a mode subscore; characters without one are dropped
+export function withSheetMode(
+  characters: ICharacterTier[],
+  mode: SheetMode,
+): ICharacterTier[] {
+  if (mode === "overall") {
+    return characters;
+  }
+  return characters
+    .flatMap((character) => {
+      const score = character.modeScores?.[mode];
+      return score === undefined
+        ? []
+        : [
+            {
+              ...character,
+              score,
+              // Subscores are whole numbers, so each bucket is a single value
+              tier: score <= 5 ? "≤ 5" : String(Math.ceil(score)),
+            },
+          ];
+    })
+    .sort((a, b) => (b.score ?? 0) - (a.score ?? 0));
+}
+
 // Sheet names carry decorations: CN-only "*" and version "[3.9]". The engraving
 // "(E1)" is kept because the same character can be listed once per engraving.
 const cleanSheetName = (name: string) =>
@@ -97,6 +139,16 @@ export function parseSheetCharacterTiers(csv: string): ICharacterTier[] {
       tags = cell(row, 6);
     }
 
+    const modeScores: Record<string, number> = {};
+    for (let row = start; row < scoreLabelRow; row += 1) {
+      // The first block's header cell reads "Character Performance Subscores Limbo"
+      const mode = (cell(row, 3).split(/\s+/).pop() ?? "").toLowerCase();
+      const modeScore = parseFloat(cell(row + 1, 3));
+      if (sheetModes.includes(mode as SheetMode) && !Number.isNaN(modeScore)) {
+        modeScores[mode] = modeScore;
+      }
+    }
+
     const name = cleanSheetName(cell(start, 1));
     if (!name || Number.isNaN(score) || !role) {
       return;
@@ -110,6 +162,7 @@ export function parseSheetCharacterTiers(csv: string): ICharacterTier[] {
       role,
       tags,
       score,
+      modeScores,
     });
   });
 

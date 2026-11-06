@@ -5,7 +5,11 @@ import { useDataStore } from "@/stores/dataStore";
 import { useArcanistOwnershipStore } from "@/stores/arcanistOwnershipStore";
 import { useViewPreferencesStore } from "@/stores/viewPreferencesStore";
 import { getArcanistI0ImagePath } from "@/composables/images";
-import { resolveCharacterTiers } from "@/composables/characterTiers";
+import {
+  resolveCharacterTiers,
+  sheetModes,
+  withSheetMode,
+} from "@/composables/characterTiers";
 import { findTeamsWithCharacter, resolveTeam } from "@/composables/teams";
 import { bannerBorderClass } from "@/utils/bannerData";
 import { SHEET_GIDS, sheetEditUrl } from "@/utils/googleSheet";
@@ -17,6 +21,7 @@ const dataStore = useDataStore();
 const ownershipStore = useArcanistOwnershipStore();
 const {
   characterTiersSource: selectedSource,
+  characterTiersMode: selectedMode,
   characterTiersOnlyOwned: onlyOwned,
 } = storeToRefs(useViewPreferencesStore());
 const sheetLoading = ref(false);
@@ -122,7 +127,7 @@ function showFlyout(team: ITeam, event: MouseEvent) {
 const tierGroups = computed(() => {
   return resolveCharacterTiers(
     selectedSource.value === "sheet"
-      ? dataStore.sheetCharacterTiers
+      ? withSheetMode(dataStore.sheetCharacterTiers, selectedMode.value)
       : dataStore.characterTiers?.characters ?? [],
     dataStore.arcanists,
     isOwned,
@@ -186,6 +191,17 @@ const scrapedDate = computed(() =>
           </option>
           <option value="sheet">
             {{ $t("character-tier-list-source-sheet") }}
+          </option>
+        </select>
+      </label>
+      <label v-if="selectedSource === 'sheet'" class="flex items-center gap-2">
+        <span>{{ $t("character-tier-list-mode-label") }}</span>
+        <select
+          v-model="selectedMode"
+          class="select select-bordered select-sm"
+        >
+          <option v-for="mode in sheetModes" :key="mode" :value="mode">
+            {{ $t(`character-tier-list-mode-${mode}`) }}
           </option>
         </select>
       </label>
@@ -302,7 +318,11 @@ const scrapedDate = computed(() =>
                   <span
                     v-if="entry.character.score !== undefined"
                     class="text-base font-bold"
-                    >{{ entry.character.score.toFixed(1) }}</span
+                    >{{
+                      selectedMode === "overall"
+                        ? entry.character.score.toFixed(1)
+                        : entry.character.score
+                    }}</span
                   >
                   <span
                     v-if="entry.character.score !== undefined && entry.character.tags"

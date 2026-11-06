@@ -110,6 +110,8 @@ export const useDataStore = defineStore("dataStore", {
       if (
         !force &&
         this.sheetCharacterTiers.length > 0 &&
+        // Data cached before mode subscores existed must be re-fetched
+        this.sheetCharacterTiers[0].modeScores &&
         Date.now() - this.sheetCharacterTiersFetchedAt < SHEET_CACHE_MAX_AGE_MS
       ) {
         return;
