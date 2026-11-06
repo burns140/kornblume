@@ -374,7 +374,9 @@ export function useCalculation(arc) {
     arcInfo.Frequency,
   );
   const euphoriaResults = calculateEuphoriaMaterials(
-    arc.euphoria,
+    arc.euphoria?.filter(
+      (id) => !(arc.completedEuphorias ?? []).includes(id),
+    ),
     arcInfo.Euphoria,
   );
   const masteryResults = calculateMasteryMaterials(

@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed, onBeforeUnmount, ref, watch } from "vue";
+import ArcanistContextMenuPopup from "./ArcanistContextMenuPopup.vue";
 import { OWNERSHIP_SOURCES } from "@/constants";
 import {
   getArcanistI0ImagePath,
@@ -40,6 +41,33 @@ const ownershipTooltip = computed(() => {
   return "";
 });
 
+const menu = ref<{ x: number; y: number } | null>(null);
+
+const closeMenu = () => {
+  menu.value = null;
+};
+const onKeydown = (e: KeyboardEvent) => {
+  if (e.key === "Escape") closeMenu();
+};
+const openMenu = (e: MouseEvent) => {
+  menu.value = { x: e.clientX, y: e.clientY };
+};
+
+watch(menu, (value) => {
+  if (value) {
+    window.addEventListener("click", closeMenu);
+    window.addEventListener("contextmenu", closeMenu, true);
+    window.addEventListener("scroll", closeMenu, true);
+    window.addEventListener("keydown", onKeydown);
+  } else {
+    window.removeEventListener("click", closeMenu);
+    window.removeEventListener("contextmenu", closeMenu, true);
+    window.removeEventListener("scroll", closeMenu, true);
+    window.removeEventListener("keydown", onKeydown);
+  }
+});
+onBeforeUnmount(closeMenu);
+
 const displayPortraitCount = computed(() => {
   if (!effectiveOwnership.value) {
     return null;
@@ -49,7 +77,18 @@ const displayPortraitCount = computed(() => {
 </script>
 
 <template>
-  <div class="p-2.5 relative overflow-hidden group">
+  <div
+    class="p-2.5 relative overflow-hidden group"
+    @contextmenu.prevent="openMenu"
+  >
+    <ArcanistContextMenuPopup
+      v-if="menu"
+      :x="menu.x"
+      :y="menu.y"
+      :arcanist-id="props.arcanist.Id"
+      :name="$t(props.arcanist.Name)"
+      @close="closeMenu"
+    />
     <div class="transform transition-transform duration-500 overflow-hidden">
       <img
         class="w-16 sm:w-20 aspect-[57/131] object-contain object-center rounded-b-full scale-[1.025] transform transition-transform duration-300 group-hover:scale-125"

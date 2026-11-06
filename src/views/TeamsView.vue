@@ -12,6 +12,7 @@ import {
 } from "@/utils/bannerData";
 import { SHEET_GIDS, sheetEditUrl } from "@/utils/googleSheet";
 import ArcanistPortraitCard from "@/components/arcanist/ArcanistPortraitCard.vue";
+import ArcanistContextMenu from "@/components/arcanist/ArcanistContextMenu.vue";
 import BorderLegend from "@/components/BorderLegend.vue";
 
 const archetypeSheetUrl = sheetEditUrl(SHEET_GIDS.archetypes);
@@ -233,21 +234,26 @@ const scrapedDate = computed(() =>
                       show-name
                       :border-class="bannerBorderClass(opt.name)"
                     />
-                    <div
+                    <ArcanistContextMenu
                       v-else-if="opt.arcanistId !== null"
-                      class="relative w-16 h-16 rounded-full overflow-hidden"
+                      :arcanist-id="opt.arcanistId"
+                      :name="opt.name"
                     >
                       <div
-                        class="absolute inset-0 z-10 rounded-full pointer-events-none"
-                        :class="bannerBorderClass(opt.name)"
-                      ></div>
-                      <img
-                        :src="getArcanistI0ImagePath(opt.arcanistId)"
-                        :alt="opt.name"
-                        class="w-full h-full object-cover object-top"
-                        :class="{ 'opacity-30 grayscale': !opt.owned }"
-                      />
-                    </div>
+                        class="relative w-16 h-16 rounded-full overflow-hidden mx-auto cursor-pointer"
+                      >
+                        <div
+                          class="absolute inset-0 z-10 rounded-full pointer-events-none"
+                          :class="bannerBorderClass(opt.name)"
+                        ></div>
+                        <img
+                          :src="getArcanistI0ImagePath(opt.arcanistId)"
+                          :alt="opt.name"
+                          class="w-full h-full object-cover object-top"
+                          :class="{ 'opacity-30 grayscale': !opt.owned }"
+                        />
+                      </div>
+                    </ArcanistContextMenu>
                     <div
                       v-else
                       class="w-16 h-16 rounded-full bg-base-300"

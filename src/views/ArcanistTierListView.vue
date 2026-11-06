@@ -14,6 +14,7 @@ import { findTeamsWithCharacter, resolveTeam } from "@/composables/teams";
 import { bannerBorderClass } from "@/utils/bannerData";
 import { SHEET_GIDS, sheetEditUrl } from "@/utils/googleSheet";
 import ArcanistPortraitCard from "@/components/arcanist/ArcanistPortraitCard.vue";
+import ArcanistContextMenu from "@/components/arcanist/ArcanistContextMenu.vue";
 import BorderLegend from "@/components/BorderLegend.vue";
 import type { ITeam } from "@/types";
 
@@ -317,21 +318,26 @@ const scrapedDate = computed(() =>
                 show-name
                 :border-class="bannerBorderClass(entry.character.name)"
               />
-              <div
+              <ArcanistContextMenu
                 v-else-if="entry.arcanistId !== null"
-                class="relative w-12 h-12 rounded-full overflow-hidden shrink-0"
+                :arcanist-id="entry.arcanistId"
+                :name="entry.character.name"
               >
                 <div
-                  class="absolute inset-0 z-10 rounded-full pointer-events-none"
-                  :class="bannerBorderClass(entry.character.name)"
-                ></div>
-                <img
-                  :src="getArcanistI0ImagePath(entry.arcanistId)"
-                  :alt="entry.character.name"
-                  class="w-full h-full object-cover object-top"
-                  :class="{ 'opacity-70 grayscale': !entry.owned }"
-                />
-              </div>
+                  class="relative w-12 h-12 rounded-full overflow-hidden shrink-0 cursor-pointer"
+                >
+                  <div
+                    class="absolute inset-0 z-10 rounded-full pointer-events-none"
+                    :class="bannerBorderClass(entry.character.name)"
+                  ></div>
+                  <img
+                    :src="getArcanistI0ImagePath(entry.arcanistId)"
+                    :alt="entry.character.name"
+                    class="w-full h-full object-cover object-top"
+                    :class="{ 'opacity-70 grayscale': !entry.owned }"
+                  />
+                </div>
+              </ArcanistContextMenu>
               <div
                 v-else
                 class="w-12 h-12 rounded-full bg-base-300 shrink-0"
@@ -443,21 +449,26 @@ const scrapedDate = computed(() =>
               show-name
               :border-class="bannerBorderClass(opt.name)"
             />
-            <div
+            <ArcanistContextMenu
               v-else-if="opt.arcanistId !== null"
-              class="relative w-16 h-16 rounded-full overflow-hidden"
+              :arcanist-id="opt.arcanistId"
+              :name="opt.name"
             >
               <div
-                class="absolute inset-0 z-10 rounded-full pointer-events-none"
-                :class="bannerBorderClass(opt.name)"
-              ></div>
-              <img
-                :src="getArcanistI0ImagePath(opt.arcanistId)"
-                :alt="opt.name"
-                class="w-full h-full object-cover object-top"
-                :class="{ 'opacity-30 grayscale': !opt.owned }"
-              />
-            </div>
+                class="relative w-16 h-16 rounded-full overflow-hidden mx-auto cursor-pointer"
+              >
+                <div
+                  class="absolute inset-0 z-10 rounded-full pointer-events-none"
+                  :class="bannerBorderClass(opt.name)"
+                ></div>
+                <img
+                  :src="getArcanistI0ImagePath(opt.arcanistId)"
+                  :alt="opt.name"
+                  class="w-full h-full object-cover object-top"
+                  :class="{ 'opacity-30 grayscale': !opt.owned }"
+                />
+              </div>
+            </ArcanistContextMenu>
             <div
               v-else
               class="w-16 h-16 rounded-full bg-base-300"

@@ -58,6 +58,7 @@ const selectedGoalResonance = ref(props.selectedArcanist.goalResonance);
 const selectedFrequency = ref(props.selectedArcanist.frequency ?? []);
 const selectedVisible = ref(props.selectedArcanist.isVisible);
 const selectedEuphoria = ref(props.selectedArcanist.euphoria ?? []);
+const completedEuphorias = ref([...(props.selectedArcanist.completedEuphorias ?? [])]);
 const selectedCurrentMastery = ref(props.selectedArcanist.currentMastery);
 const selectedGoalMastery = ref(props.selectedArcanist.goalMastery);
 
@@ -68,13 +69,10 @@ const compareLevels = (
   goalLevelSelect: number,
 ) => {
   if (Number(currentInsightSelect) > Number(goalInsightSelect)) {
-    // If current insight is higher, consider it as "lower" regardless of levels
     return true;
   } else if (Number(currentInsightSelect) < Number(goalInsightSelect)) {
-    // If current insight is lower, consider it as "higher" regardless of levels
     return false;
   } else {
-    // If insights are equal, compare levels
     return Number(currentLevelSelect) > Number(goalLevelSelect);
   }
 };
@@ -86,22 +84,17 @@ const indexInArcanistsList = computed(() => {
 });
 
 const addArcanist = () => {
-  // console.log(selectedArcanists.value);
   const existingIndex = indexInArcanistsList.value;
-  // console.log(existingIndex);
 
   if (existingIndex !== -1) {
-    // If the arcanist with the same Id already exists, update it
     selectedArcanists.value[existingIndex] = {
       ...selectedArcanists.value[existingIndex],
       ...editingArcanist.value,
     };
   } else {
-    // If the arcanist with the same Id doesn't exist, add it
     selectedArcanists.value.push(editingArcanist.value);
   }
 
-  // Remove the arcanist from listArcanists
   listArcanists.value = listArcanists.value.filter(
     (arc) => arc.Id !== editingArcanist.value.Id,
   );
@@ -116,7 +109,6 @@ const removeArcanist = () => {
     (arc) => Number(arc.Id) === Number(editingArcanist.value.Id),
   );
   if (existingIndex !== -1) {
-    // If found, remove it
     selectedArcanists.value.splice(existingIndex, 1);
   }
   closeOverlay();
@@ -161,6 +153,9 @@ const levelUpArcanist = () => {
     selectedCurrentInsight.value = selectedGoalInsight.value;
     selectedCurrentResonance.value = selectedGoalResonance.value;
     selectedFrequency.value = [];
+    completedEuphorias.value = [
+      ...new Set([...completedEuphorias.value, ...selectedEuphoria.value]),
+    ];
     selectedEuphoria.value = [];
     selectedCurrentMastery.value = selectedGoalMastery.value;
     useGlobalStore().setIsEditingPlanner(false);
@@ -183,10 +178,8 @@ const quickGoal = () => {
 const toggleFrequency = (frequency: { Id: number; Type: string }) => {
   const index = selectedFrequency.value.findIndex((f) => f.Id === frequency.Id);
   if (index !== -1) {
-    // remove if selected
     selectedFrequency.value.splice(index, 1);
   } else {
-    // add if not selected
     selectedFrequency.value.push({
       Id: frequency.Id,
       Type: frequency.Type,
@@ -197,10 +190,8 @@ const toggleFrequency = (frequency: { Id: number; Type: string }) => {
 const toggleEuphoria = (euphoria: number) => {
   const index = selectedEuphoria.value.findIndex((e) => e === euphoria);
   if (index !== -1) {
-    // remove if selected
     selectedEuphoria.value.splice(index, 1);
   } else {
-    // add if not selected
     selectedEuphoria.value.push(euphoria);
   }
 };
@@ -254,6 +245,7 @@ const editingArcanist = computed(() => ({
   goalResonance: selectedGoalResonance.value,
   frequency: selectedFrequency.value,
   euphoria: selectedEuphoria.value,
+  completedEuphorias: completedEuphorias.value,
   currentMastery: selectedCurrentMastery.value,
   goalMastery: selectedGoalMastery.value,
 }));
@@ -276,7 +268,6 @@ const goalInsightOptions = computed(() => {
 });
 
 const currentLevelOptions = computed(() => {
-  // if (selectedCurrentInsight.value == null) return [];
   const calc = calculations.find(
     (calc) =>
       calc.Rarity.includes(selectedArcanist.value.Rarity) &&
@@ -302,7 +293,6 @@ const goalLevelOptions = computed(() => {
   );
 
   if (!calc) return [];
-  // console.log(calc);
 
   if (selectedGoalInsight.value === selectedCurrentInsight.value) {
     return [
@@ -400,7 +390,6 @@ watch(
     selectedGoalMastery,
   ],
   () => {
-    // Whenever any selectedX changes, update the key to trigger a re-render in all SelectList components
     updateKey.value += 1;
     if (
       selectedCurrentLevel.value >
@@ -423,7 +412,6 @@ watch(
       selectedGoalResonance.value = selectedCurrentResonance.value;
     }
 
-    // If the selected value is lower than the first option, set it to the first option
     if (selectedCurrentResonance.value < currentResonanceOptions.value[0]) {
       selectedCurrentResonance.value = currentResonanceOptions.value[0];
     }
@@ -445,7 +433,6 @@ watch(
         selectedGoalLevel.value,
       )
     ) {
-      // console.log('Current is higher than goal');
       selectedGoalInsight.value = selectedCurrentInsight.value;
       selectedGoalLevel.value = selectedCurrentLevel.value;
     }
@@ -760,6 +747,19 @@ watch(
                 >
                   {{ $t("euphoria-requirement") }}
                 </div>
+
+                <label
+                  v-if="euphoriaOptions.length > 0"
+                  class="flex items-center justify-center gap-2"
+                >
+                  <input
+                    v-model="completedEuphorias"
+                    type="checkbox"
+                    class="checkbox checkbox-info checkbox-sm"
+                    :value="euphoriaOptions[euphoriaOptions.length - 1].Id"
+                  />
+                  <span>{{ $t("planner-euphoria-completed") }}</span>
+                </label>
 
                 <div class="mt-2 flex justify-center items-center leading-none">
                   <SelectList
