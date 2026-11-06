@@ -91,8 +91,8 @@ export function withSheetMode(
     .sort((a, b) => (b.score ?? 0) - (a.score ?? 0));
 }
 
-// Sheet names carry decorations: CN-only "*" and version "[3.9]". The engraving
-// "(E1)" is kept because the same character can be listed once per engraving.
+// Sheet names carry decorations: CN-only "*" and version "[3.9]". The Euphoria
+// level "(E1)" is kept because the same character can be listed once per level.
 const cleanSheetName = (name: string) =>
   name
     .replace(/\[[^\]]*\]|\*/g, "")
@@ -156,7 +156,7 @@ export function parseSheetCharacterTiers(csv: string): ICharacterTier[] {
 
     characters.push({
       name,
-      // Not normalizeName: it ignores the engraving, and slugs must stay unique
+      // Not normalizeName: it ignores Euphoria, and slugs must stay unique
       slug: name.toLowerCase().replace(/[^a-z0-9]/g, ""),
       tier: sheetScoreTier(score),
       role,

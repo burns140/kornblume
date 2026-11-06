@@ -1,14 +1,14 @@
 // Plain JS so it can be shared by the Node scraper script and the app.
 export const NAME_ALIASES = {};
 
-// Community sheets append the engraving level to names, e.g. "Beryl (E1)"
-export const stripEngraving = (name) =>
+// Community sheets append the Euphoria level to names, e.g. "Beryl (E1)"
+export const stripEuphoria = (name) =>
   String(name)
     .replace(/\s*\(E\d+\)/gi, "")
     .trim();
 
 export const normalizeName = (name) => {
-  const n = stripEngraving(name)
+  const n = stripEuphoria(name)
     .toLowerCase()
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")

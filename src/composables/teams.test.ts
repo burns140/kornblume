@@ -51,7 +51,7 @@ describe("parseArchetypeTeams", () => {
     ]);
   });
 
-  it("strips engraving suffixes from character names", () => {
+  it("strips Euphoria suffixes from character names", () => {
     const csv = [
       '"Liang","","","","","","",""',
       '"DPS","Essential","Utility","Essential","Sustain","Flexible","Utility","Flexible"',

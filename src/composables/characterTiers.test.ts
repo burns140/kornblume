@@ -60,7 +60,7 @@ describe("parseSheetCharacterTiers", () => {
     ...sheetBlock("Unscored", "Nothing", "", "Carry"),
   ]);
 
-  it("reads score, role and tags; keeps the engraving, drops other decorations", () => {
+  it("reads score, role and tags; keeps the Euphoria suffix, drops other decorations", () => {
     expect(parseSheetCharacterTiers(csv)).toEqual([
       {
         name: "Rhiannon",

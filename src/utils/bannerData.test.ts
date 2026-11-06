@@ -40,7 +40,7 @@ describe("banner data", () => {
     expect(bannerBorderClass("Nobody")).toBe("");
   });
 
-  it("ignores the engraving suffix when looking up banners", () => {
+  it("ignores the Euphoria suffix when looking up banners", () => {
     expect(isOnCurrentBanner("Recoleta (E1)")).toBe(true);
     expect(bannerBorderClass("Moldir (E1)")).toBe(
       bannerBorderClass("Moldir"),

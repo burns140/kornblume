@@ -1,6 +1,6 @@
 import type { IArcanist, ITeam } from "@/types";
 import { parseCsv } from "@/utils/csv";
-import { normalizeName, stripEngraving } from "@/utils/teamMatching";
+import { normalizeName, stripEuphoria } from "@/utils/teamMatching";
 
 export interface IResolvedOption {
   name: string;
@@ -34,7 +34,7 @@ export function parseArchetypeTeams(csv: string): ITeam[] {
     const slots = [0, 2, 4, 6]
       .filter((column) => roleRow[column]?.trim() && characterRow[column]?.trim())
       .map((column) => {
-        const characterName = stripEngraving(characterRow[column].trim());
+        const characterName = stripEuphoria(characterRow[column].trim());
         return [{ name: characterName, slug: normalizeName(characterName) }];
       });
 

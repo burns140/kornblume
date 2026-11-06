@@ -1,4 +1,4 @@
-import { stripEngraving } from "@/utils/teamMatching";
+import { stripEuphoria } from "@/utils/teamMatching";
 
 export const bannerList = [
   // limited
@@ -195,12 +195,12 @@ const bannerBorderClasses: Record<BannerType, string> = {
 };
 
 export const bannerBorderClass = (name: string): string => {
-  const type = currentBanners[stripEngraving(name).toLowerCase()];
+  const type = currentBanners[stripEuphoria(name).toLowerCase()];
   return type ? bannerBorderClasses[type] : "";
 };
 
 export const isOnCurrentBanner = (name: string): boolean =>
-  stripEngraving(name).toLowerCase() in currentBanners;
+  stripEuphoria(name).toLowerCase() in currentBanners;
 
 interface IBannerCheckTeam {
   ownedCount: number;
