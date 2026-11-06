@@ -1,7 +1,9 @@
 <script setup lang="ts">
-import { computed, ref } from "vue";
+import { computed, onMounted, ref } from "vue";
+import { storeToRefs } from "pinia";
 import { useDataStore } from "@/stores/dataStore";
 import { useArcanistOwnershipStore } from "@/stores/arcanistOwnershipStore";
+import { useViewPreferencesStore } from "@/stores/viewPreferencesStore";
 import { resolveTeam } from "@/composables/teams";
 import { getArcanistI0ImagePath } from "@/composables/images";
 import {
@@ -23,8 +25,8 @@ const teamBorderClass = (r: ResolvedTeam) => {
 
 const dataStore = useDataStore();
 const ownershipStore = useArcanistOwnershipStore();
-const onlyBuildable = ref(false);
-const selectedSource = ref<"prydwen" | "archetypes">("prydwen");
+const { teamsSource: selectedSource, teamsOnlyBuildable: onlyBuildable } =
+  storeToRefs(useViewPreferencesStore());
 const archetypeLoading = ref(false);
 const archetypeError = ref("");
 
@@ -79,6 +81,9 @@ function onSourceChange() {
     loadArchetypeTeams();
   }
 }
+
+// The remembered source may need its live data fetched on a fresh page load
+onMounted(onSourceChange);
 
 const scrapedDate = computed(() =>
   dataStore.teams

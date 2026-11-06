@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from "vue";
+import { storeToRefs } from "pinia";
 import { useDataStore } from "@/stores/dataStore";
 import { useArcanistOwnershipStore } from "@/stores/arcanistOwnershipStore";
+import { useViewPreferencesStore } from "@/stores/viewPreferencesStore";
 import { getArcanistI0ImagePath } from "@/composables/images";
 import { resolveCharacterTiers } from "@/composables/characterTiers";
 import { findTeamsWithCharacter, resolveTeam } from "@/composables/teams";
@@ -13,8 +15,10 @@ const sheetUrl = sheetEditUrl(SHEET_GIDS.characterTiers);
 
 const dataStore = useDataStore();
 const ownershipStore = useArcanistOwnershipStore();
-const onlyOwned = ref(false);
-const selectedSource = ref<"prydwen" | "sheet">("prydwen");
+const {
+  characterTiersSource: selectedSource,
+  characterTiersOnlyOwned: onlyOwned,
+} = storeToRefs(useViewPreferencesStore());
 const sheetLoading = ref(false);
 const sheetError = ref("");
 const selectedName = ref<string | null>(null);
@@ -35,7 +39,13 @@ function closeOnOutsideClick(event: MouseEvent) {
   }
 }
 
-onMounted(() => document.addEventListener("click", closeOnOutsideClick));
+onMounted(() => {
+  document.addEventListener("click", closeOnOutsideClick);
+  // The remembered source may need its live data fetched on a fresh page load
+  if (selectedSource.value === "sheet") {
+    loadSheet();
+  }
+});
 onBeforeUnmount(() =>
   document.removeEventListener("click", closeOnOutsideClick),
 );
