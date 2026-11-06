@@ -21,7 +21,6 @@ const arcanist = computed(() =>
 );
 const inPlanner = computed(() => plannerStore.hasArcanist(props.arcanistId));
 const hasEuphoria = computed(() => (arcanist.value?.Euphoria ?? []).length > 0);
-// Open the flyout on the left when there is no room on the right
 const flyoutOnLeft = computed(
   () => props.x + MENU_WIDTH + FLYOUT_WIDTH > window.innerWidth,
 );
