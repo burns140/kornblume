@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, ref, watch } from "vue";
-import { usePlannerStore } from "@/stores/plannerStore";
+import ArcanistContextMenuPopup from "./ArcanistContextMenuPopup.vue";
 import { OWNERSHIP_SOURCES } from "@/constants";
 import {
   getArcanistI0ImagePath,
@@ -41,8 +41,6 @@ const ownershipTooltip = computed(() => {
   return "";
 });
 
-const plannerStore = usePlannerStore();
-const inPlanner = computed(() => plannerStore.hasArcanist(props.arcanist.Id));
 const menu = ref<{ x: number; y: number } | null>(null);
 
 const closeMenu = () => {
@@ -53,10 +51,6 @@ const onKeydown = (e: KeyboardEvent) => {
 };
 const openMenu = (e: MouseEvent) => {
   menu.value = { x: e.clientX, y: e.clientY };
-};
-const addToPlanner = () => {
-  plannerStore.addDefaultArcanist(props.arcanist);
-  closeMenu();
 };
 
 watch(menu, (value) => {
@@ -87,29 +81,14 @@ const displayPortraitCount = computed(() => {
     class="p-2.5 relative overflow-hidden group"
     @contextmenu.prevent="openMenu"
   >
-    <Teleport to="body">
-      <ul
-        v-if="menu"
-        class="menu fixed z-[1000] w-44 rounded-md border border-base-content/30 bg-base-200 p-1 shadow-lg"
-        :style="{ left: menu.x + 'px', top: menu.y + 'px' }"
-        @click.stop
-        @contextmenu.prevent
-      >
-        <li class="px-3 py-1 font-semibold text-white truncate">{{ $t(props.arcanist.Name) }}</li>
-        <li :class="{ disabled: inPlanner }">
-          <a
-            :class="{
-              'cursor-pointer': !inPlanner,
-              'opacity-40 cursor-not-allowed': inPlanner,
-            }"
-            :aria-disabled="inPlanner"
-            @click.prevent="!inPlanner && addToPlanner()"
-          >
-            {{ $t("Add to planner") }}
-          </a>
-        </li>
-      </ul>
-    </Teleport>
+    <ArcanistContextMenuPopup
+      v-if="menu"
+      :x="menu.x"
+      :y="menu.y"
+      :arcanist-id="props.arcanist.Id"
+      :name="$t(props.arcanist.Name)"
+      @close="closeMenu"
+    />
     <div class="transform transition-transform duration-500 overflow-hidden">
       <img
         class="w-16 sm:w-20 aspect-[57/131] object-contain object-center rounded-b-full scale-[1.025] transform transition-transform duration-300 group-hover:scale-125"

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, ref, watch } from "vue";
 import { useDataStore } from "@/stores/dataStore";
-import { usePlannerStore } from "@/stores/plannerStore";
+import ArcanistContextMenuPopup from "./ArcanistContextMenuPopup.vue";
 import { stripEuphoria } from "@/utils/teamMatching";
 import {
   getArcanistI0ImagePath,
@@ -27,8 +27,6 @@ const arcanist = computed(() =>
 const displayName = computed(() => stripEuphoria(props.name));
 const euphoria = computed(() => /\((E\d+)\)/i.exec(props.name)?.[1] ?? "");
 
-const plannerStore = usePlannerStore();
-const inPlanner = computed(() => plannerStore.hasArcanist(props.arcanistId));
 const menu = ref<{ x: number; y: number } | null>(null);
 
 const closeMenu = () => {
@@ -40,10 +38,6 @@ const onKeydown = (e: KeyboardEvent) => {
 const openMenu = (e: MouseEvent) => {
   if (!arcanist.value) return;
   menu.value = { x: e.clientX, y: e.clientY };
-};
-const addToPlanner = () => {
-  if (arcanist.value) plannerStore.addDefaultArcanist(arcanist.value);
-  closeMenu();
 };
 
 watch(menu, (value) => {
@@ -67,29 +61,14 @@ onBeforeUnmount(closeMenu);
     class="group relative w-16 shrink-0 overflow-hidden rounded-md cursor-pointer"
     @contextmenu.prevent="openMenu"
   >
-    <Teleport to="body">
-      <ul
-        v-if="menu"
-        class="menu fixed z-[1000] w-44 rounded-md border border-base-content/30 bg-base-200 p-1 shadow-lg"
-        :style="{ left: menu.x + 'px', top: menu.y + 'px' }"
-        @click.stop
-        @contextmenu.prevent
-      >
-        <li class="px-3 py-1 font-semibold text-white truncate">{{ name }}</li>
-        <li :class="{ disabled: inPlanner }">
-          <a
-            :class="{
-              'cursor-pointer': !inPlanner,
-              'opacity-40 cursor-not-allowed': inPlanner,
-            }"
-            :aria-disabled="inPlanner"
-            @click.prevent="!inPlanner && addToPlanner()"
-          >
-            {{ $t("Add to planner") }}
-          </a>
-        </li>
-      </ul>
-    </Teleport>
+    <ArcanistContextMenuPopup
+      v-if="menu"
+      :x="menu.x"
+      :y="menu.y"
+      :arcanist-id="arcanistId"
+      :name="name"
+      @close="closeMenu"
+    />
     <div
       v-if="borderClass"
       class="absolute inset-0 z-10 rounded-md pointer-events-none"
