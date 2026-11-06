@@ -9,7 +9,7 @@ import { resolveCharacterTiers } from "@/composables/characterTiers";
 import { findTeamsWithCharacter, resolveTeam } from "@/composables/teams";
 import { bannerBorderClass } from "@/utils/bannerData";
 import { SHEET_GIDS, sheetEditUrl } from "@/utils/googleSheet";
-import type { ICharacterTier, ITeam } from "@/types";
+import type { ITeam } from "@/types";
 
 const sheetUrl = sheetEditUrl(SHEET_GIDS.characterTiers);
 
@@ -153,9 +153,6 @@ function onSourceChange() {
   }
 }
 
-const cardSubtitle = (character: ICharacterTier) =>
-  [character.score?.toFixed(1), character.tags].filter(Boolean).join(" · ");
-
 const scrapedDate = computed(() =>
   dataStore.characterTiers
     ? new Date(dataStore.characterTiers.scrapedAt).toLocaleDateString()
@@ -253,7 +250,7 @@ const scrapedDate = computed(() =>
       class="mb-8 pt-5 border-t-2 border-white/40 first:border-t-0 first:pt-0"
     >
       <h2 class="text-2xl font-bold mb-3">{{ group.tier }}</h2>
-      <div class="grid gap-4 grid-cols-1 sm:grid-cols-2 xl:grid-cols-4">
+      <div class="grid gap-4 grid-cols-1 sm:grid-cols-2 xl:grid-cols-3">
         <section
           v-for="roleGroup in group.roles"
           :key="roleGroup.role"
@@ -299,10 +296,21 @@ const scrapedDate = computed(() =>
                   {{ entry.character.name }}
                 </div>
                 <div
-                  v-if="cardSubtitle(entry.character)"
-                  class="text-xs opacity-70 truncate"
+                  v-if="entry.character.score !== undefined || entry.character.tags"
+                  class="text-xs truncate"
                 >
-                  {{ cardSubtitle(entry.character) }}
+                  <span
+                    v-if="entry.character.score !== undefined"
+                    class="text-base font-bold"
+                    >{{ entry.character.score.toFixed(1) }}</span
+                  >
+                  <span
+                    v-if="entry.character.score !== undefined && entry.character.tags"
+                    class="opacity-70"
+                  >
+                    ·
+                  </span>
+                  <span class="opacity-70">{{ entry.character.tags }}</span>
                 </div>
               </div>
             </div>
