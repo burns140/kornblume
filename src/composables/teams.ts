@@ -1,5 +1,6 @@
 import type { IArcanist, ITeam } from "@/types";
-import { normalizeName } from "@/utils/teamMatching";
+import { parseCsv } from "@/utils/csv";
+import { normalizeName, stripEngraving } from "@/utils/teamMatching";
 
 export interface IResolvedOption {
   name: string;
@@ -19,46 +20,8 @@ export interface IResolvedTeam {
   total: number;
 }
 
-// Archetype sheet names carry an engraving suffix, e.g. "Beryl (E1)"
-const stripEngraving = (name: string) => name.replace(/\s*\(E\d+\)\s*$/i, "");
-
 export function parseArchetypeTeams(csv: string): ITeam[] {
-  const rows: string[][] = [];
-  let row: string[] = [];
-  let cell = "";
-  let inQuotes = false;
-
-  for (let i = 0; i < csv.length; i += 1) {
-    const char = csv[i];
-    if (inQuotes) {
-      if (char === '"' && csv[i + 1] === '"') {
-        cell += '"';
-        i += 1;
-      } else if (char === '"') {
-        inQuotes = false;
-      } else {
-        cell += char;
-      }
-    } else if (char === '"') {
-      inQuotes = true;
-    } else if (char === ",") {
-      row.push(cell);
-      cell = "";
-    } else if (char === "\n") {
-      row.push(cell.replace(/\r$/, ""));
-      rows.push(row);
-      row = [];
-      cell = "";
-    } else {
-      cell += char;
-    }
-  }
-
-  if (cell || row.length) {
-    row.push(cell.replace(/\r$/, ""));
-    rows.push(row);
-  }
-
+  const rows = parseCsv(csv);
   const teams: ITeam[] = [];
   for (let i = 0; i + 2 < rows.length; i += 1) {
     const [name, ...remaining] = rows[i].map((value) => value.trim());

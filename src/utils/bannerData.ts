@@ -1,3 +1,5 @@
+import { stripEngraving } from "@/utils/teamMatching";
+
 export const bannerList = [
   // limited
   "One Gram of Curiosity",
@@ -193,12 +195,12 @@ const bannerBorderClasses: Record<BannerType, string> = {
 };
 
 export const bannerBorderClass = (name: string): string => {
-  const type = currentBanners[name.toLowerCase()];
+  const type = currentBanners[stripEngraving(name).toLowerCase()];
   return type ? bannerBorderClasses[type] : "";
 };
 
 export const isOnCurrentBanner = (name: string): boolean =>
-  name.toLowerCase() in currentBanners;
+  stripEngraving(name).toLowerCase() in currentBanners;
 
 interface IBannerCheckTeam {
   ownedCount: number;

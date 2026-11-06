@@ -10,6 +10,7 @@ export interface ICharacterTier {
   tier: string;
   role: ICharacterTierRole;
   tags: string;
+  score?: number;
 }
 
 export interface ICharacterTierListData {

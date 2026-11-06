@@ -1,18 +1,25 @@
 import { defineStore } from "pinia";
 import {
   IArcanists,
+  ICharacterTier,
   ICharacterTierListData,
   IFormulas,
   IItems,
   IPsychubes,
   IShops,
   IStages,
+  ITeam,
   ITeamsData,
 } from "@/types";
+import { parseSheetCharacterTiers } from "@/composables/characterTiers";
+import { parseArchetypeTeams } from "@/composables/teams";
+import { SHEET_GIDS, fetchSheetCsv } from "@/utils/googleSheet";
 
 interface IDataStore {
   characterTiers: ICharacterTierListData | null;
   teams: ITeamsData | null;
+  sheetCharacterTiers: ICharacterTier[];
+  sheetTeams: ITeam[];
   arcanists: IArcanists;
   stages: IStages;
   stages1_4_greedy: IStages;
@@ -39,6 +46,8 @@ export const useDataStore = defineStore("dataStore", {
   state: (): IDataStore => ({
     characterTiers: null,
     teams: null,
+    sheetCharacterTiers: [],
+    sheetTeams: [],
     arcanists: [],
     stages: {},
     stages1_4_greedy: {},
@@ -71,6 +80,31 @@ export const useDataStore = defineStore("dataStore", {
       return Promise.all(
         modules.map((module) => this.checkAndLoadJsonData(module)),
       );
+    },
+    // Community spreadsheet data is fetched live and cached for the session
+    async loadSheetTeams() {
+      if (this.sheetTeams.length > 0) {
+        return;
+      }
+      const teams = parseArchetypeTeams(
+        await fetchSheetCsv(SHEET_GIDS.archetypes, "B13:I1000"),
+      );
+      if (teams.length === 0) {
+        throw new Error("No teams were found in the spreadsheet");
+      }
+      this.sheetTeams = teams;
+    },
+    async loadSheetCharacterTiers() {
+      if (this.sheetCharacterTiers.length > 0) {
+        return;
+      }
+      const characters = parseSheetCharacterTiers(
+        await fetchSheetCsv(SHEET_GIDS.characterTiers),
+      );
+      if (characters.length === 0) {
+        throw new Error("No characters were found in the spreadsheet");
+      }
+      this.sheetCharacterTiers = characters;
     },
   },
 });

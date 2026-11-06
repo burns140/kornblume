@@ -93,6 +93,13 @@ describe("findTeamsWithCharacter", () => {
     ]);
   });
 
+  it("finds teams for an engraved character name", () => {
+    expect(findTeamsWithCharacter([team, other], "Aleph (E1)")).toEqual([
+      team,
+      other,
+    ]);
+  });
+
   it("returns nothing for characters in no team", () => {
     expect(findTeamsWithCharacter([team, other], "Nobody")).toEqual([]);
   });

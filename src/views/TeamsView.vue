@@ -2,18 +2,15 @@
 import { computed, ref } from "vue";
 import { useDataStore } from "@/stores/dataStore";
 import { useArcanistOwnershipStore } from "@/stores/arcanistOwnershipStore";
-import { parseArchetypeTeams, resolveTeam } from "@/composables/teams";
+import { resolveTeam } from "@/composables/teams";
 import { getArcanistI0ImagePath } from "@/composables/images";
 import {
   bannerBorderClass,
   completableWithBanner,
 } from "@/utils/bannerData";
-import type { ITeam } from "@/types";
+import { SHEET_GIDS, sheetEditUrl } from "@/utils/googleSheet";
 
-const archetypeSheetUrl =
-  "https://docs.google.com/spreadsheets/d/1e46cecjsIb1LO3Ybb6urlVUZKUk8R7yrgG9yXZS8-Ho/edit";
-const archetypeCsvUrl =
-  "https://docs.google.com/spreadsheets/d/1e46cecjsIb1LO3Ybb6urlVUZKUk8R7yrgG9yXZS8-Ho/gviz/tq?tqx=out:csv&sheet=Archetypes%20List%20(CN%204.0)&range=B13:I1000";
+const archetypeSheetUrl = sheetEditUrl(SHEET_GIDS.archetypes);
 
 type ResolvedTeam = ReturnType<typeof resolveTeam>;
 
@@ -28,14 +25,13 @@ const dataStore = useDataStore();
 const ownershipStore = useArcanistOwnershipStore();
 const onlyBuildable = ref(false);
 const selectedSource = ref<"prydwen" | "archetypes">("prydwen");
-const archetypeTeams = ref<ITeam[]>([]);
 const archetypeLoading = ref(false);
 const archetypeError = ref("");
 
 const resolved = computed(() => {
   const teams =
     selectedSource.value === "archetypes"
-      ? archetypeTeams.value
+      ? dataStore.sheetTeams
       : dataStore.teams?.teams ?? [];
   return teams.map((team) =>
     resolveTeam(
@@ -66,23 +62,10 @@ const groups = computed(() => {
 });
 
 async function loadArchetypeTeams() {
-  if (archetypeTeams.value.length > 0) {
-    return;
-  }
-
   archetypeLoading.value = true;
   archetypeError.value = "";
   try {
-    const response = await fetch(archetypeCsvUrl);
-    if (!response.ok) {
-      throw new Error(`Request failed (${response.status})`);
-    }
-
-    const teams = parseArchetypeTeams(await response.text());
-    if (teams.length === 0) {
-      throw new Error("No teams were found in the spreadsheet");
-    }
-    archetypeTeams.value = teams;
+    await dataStore.loadSheetTeams();
   } catch (error) {
     archetypeError.value =
       error instanceof Error ? error.message : String(error);

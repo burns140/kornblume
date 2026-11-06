@@ -6,11 +6,17 @@ import { getArcanistI0ImagePath } from "@/composables/images";
 import { resolveCharacterTiers } from "@/composables/characterTiers";
 import { findTeamsWithCharacter, resolveTeam } from "@/composables/teams";
 import { bannerBorderClass } from "@/utils/bannerData";
-import type { ITeam } from "@/types";
+import { SHEET_GIDS, sheetEditUrl } from "@/utils/googleSheet";
+import type { ICharacterTier, ITeam } from "@/types";
+
+const sheetUrl = sheetEditUrl(SHEET_GIDS.characterTiers);
 
 const dataStore = useDataStore();
 const ownershipStore = useArcanistOwnershipStore();
 const onlyOwned = ref(false);
+const selectedSource = ref<"prydwen" | "sheet">("prydwen");
+const sheetLoading = ref(false);
+const sheetError = ref("");
 const selectedName = ref<string | null>(null);
 const hoveredTeam = ref<ITeam | null>(null);
 const root = ref<HTMLElement | null>(null);
@@ -50,15 +56,21 @@ function sidePosition(rect: DOMRect) {
 
 const isOwned = (id: number) => !!ownershipStore.getEffectiveEntry(id);
 
+// The team panel follows the selected source so teams match the tier list
+const sourceTeams = computed(() =>
+  selectedSource.value === "sheet"
+    ? dataStore.sheetTeams
+    : dataStore.teams?.teams ?? [],
+);
+
 const selectedTeams = computed(() =>
   selectedName.value
-    ? findTeamsWithCharacter(
-        dataStore.teams?.teams ?? [],
-        selectedName.value,
-      ).map((team) => {
-        const resolved = resolveTeam(team, dataStore.arcanists, isOwned);
-        return { team, buildable: resolved.ownedCount === resolved.total };
-      })
+    ? findTeamsWithCharacter(sourceTeams.value, selectedName.value).map(
+        (team) => {
+          const resolved = resolveTeam(team, dataStore.arcanists, isOwned);
+          return { team, buildable: resolved.ownedCount === resolved.total };
+        },
+      )
     : [],
 );
 
@@ -99,12 +111,40 @@ function showFlyout(team: ITeam, event: MouseEvent) {
 
 const tierGroups = computed(() => {
   return resolveCharacterTiers(
-    dataStore.characterTiers?.characters ?? [],
+    selectedSource.value === "sheet"
+      ? dataStore.sheetCharacterTiers
+      : dataStore.characterTiers?.characters ?? [],
     dataStore.arcanists,
     isOwned,
     onlyOwned.value,
   );
 });
+
+async function loadSheet() {
+  sheetLoading.value = true;
+  sheetError.value = "";
+  try {
+    await Promise.all([
+      dataStore.loadSheetCharacterTiers(),
+      dataStore.loadSheetTeams(),
+    ]);
+  } catch (error) {
+    sheetError.value = error instanceof Error ? error.message : String(error);
+  } finally {
+    sheetLoading.value = false;
+  }
+}
+
+function onSourceChange() {
+  selectedName.value = null;
+  hoveredTeam.value = null;
+  if (selectedSource.value === "sheet") {
+    loadSheet();
+  }
+}
+
+const cardSubtitle = (character: ICharacterTier) =>
+  [character.score?.toFixed(1), character.tags].filter(Boolean).join(" · ");
 
 const scrapedDate = computed(() =>
   dataStore.characterTiers
@@ -117,16 +157,39 @@ const scrapedDate = computed(() =>
   <div ref="root" class="container mx-auto px-4 py-6 relative">
     <div class="flex flex-wrap items-center justify-between gap-3 mb-5">
       <p class="text-sm opacity-80">
-        {{ $t("character-tier-list-description") }}
-        <span v-if="dataStore.characterTiers">
-          ({{ dataStore.characterTiers.version }})
-        </span>
+        <template v-if="selectedSource === 'sheet'">
+          {{ $t("character-tier-list-sheet-description") }}
+        </template>
+        <template v-else>
+          {{ $t("character-tier-list-description") }}
+          <span v-if="dataStore.characterTiers">
+            ({{ dataStore.characterTiers.version }})
+          </span>
+        </template>
       </p>
+      <label class="flex items-center gap-2">
+        <span>{{ $t("character-tier-list-source-label") }}</span>
+        <select
+          v-model="selectedSource"
+          class="select select-bordered select-sm"
+          @change="onSourceChange"
+        >
+          <option value="prydwen">
+            {{ $t("character-tier-list-source-prydwen") }}
+          </option>
+          <option value="sheet">
+            {{ $t("character-tier-list-source-sheet") }}
+          </option>
+        </select>
+      </label>
       <label class="flex items-center gap-2 cursor-pointer">
         <input v-model="onlyOwned" type="checkbox" class="checkbox" />
         {{ $t("character-tier-list-only-owned") }}
       </label>
-      <div v-if="dataStore.characterTiers" class="text-sm opacity-70">
+      <div
+        v-if="selectedSource === 'prydwen' && dataStore.characterTiers"
+        class="text-sm opacity-70"
+      >
         {{ $t("character-tier-list-last-updated", { date: scrapedDate }) }} ·
         <a
           :href="dataStore.characterTiers.source"
@@ -136,9 +199,24 @@ const scrapedDate = computed(() =>
           >{{ $t("teams-source") }}</a
         >
       </div>
+      <div v-else-if="selectedSource === 'sheet'" class="text-sm opacity-70">
+        <a :href="sheetUrl" target="_blank" rel="noopener" class="link">{{
+          $t("teams-source")
+        }}</a>
+      </div>
     </div>
 
-    <p v-if="tierGroups.length === 0" class="opacity-70">
+    <p v-if="selectedSource === 'sheet' && sheetLoading" class="opacity-70">
+      {{ $t("character-tier-list-source-loading") }}
+    </p>
+    <p
+      v-else-if="selectedSource === 'sheet' && sheetError"
+      class="text-error"
+      role="alert"
+    >
+      {{ $t("character-tier-list-source-load-error", { error: sheetError }) }}
+    </p>
+    <p v-else-if="tierGroups.length === 0" class="opacity-70">
       {{ $t("character-tier-list-no-characters") }}
     </p>
 
@@ -194,10 +272,10 @@ const scrapedDate = computed(() =>
                   {{ entry.character.name }}
                 </div>
                 <div
-                  v-if="entry.character.tags"
+                  v-if="cardSubtitle(entry.character)"
                   class="text-xs opacity-70 truncate"
                 >
-                  {{ entry.character.tags }}
+                  {{ cardSubtitle(entry.character) }}
                 </div>
               </div>
             </div>
