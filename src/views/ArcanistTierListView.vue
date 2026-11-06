@@ -13,6 +13,8 @@ import {
 import { findTeamsWithCharacter, resolveTeam } from "@/composables/teams";
 import { bannerBorderClass } from "@/utils/bannerData";
 import { SHEET_GIDS, sheetEditUrl } from "@/utils/googleSheet";
+import ArcanistPortraitCard from "@/components/arcanist/ArcanistPortraitCard.vue";
+import BorderLegend from "@/components/BorderLegend.vue";
 import type { ITeam } from "@/types";
 
 const sheetUrl = sheetEditUrl(SHEET_GIDS.characterTiers);
@@ -23,6 +25,7 @@ const {
   characterTiersSource: selectedSource,
   characterTiersMode: selectedMode,
   characterTiersOnlyOwned: onlyOwned,
+  characterTiersPortraits: usePortraits,
 } = storeToRefs(useViewPreferencesStore());
 const sheetLoading = ref(false);
 const sheetError = ref("");
@@ -209,6 +212,10 @@ const scrapedDate = computed(() =>
         <input v-model="onlyOwned" type="checkbox" class="checkbox" />
         {{ $t("character-tier-list-only-owned") }}
       </label>
+      <label class="flex items-center gap-2 cursor-pointer">
+        <input v-model="usePortraits" type="checkbox" class="checkbox" />
+        {{ $t("portrait-style") }}
+      </label>
       <div
         v-if="selectedSource === 'prydwen' && dataStore.characterTiers"
         class="text-sm opacity-70"
@@ -246,6 +253,8 @@ const scrapedDate = computed(() =>
       </div>
     </div>
 
+    <BorderLegend card-border="owned" />
+
     <p v-if="selectedSource === 'sheet' && sheetLoading" class="opacity-70">
       {{ $t("character-tier-list-source-loading") }}
     </p>
@@ -266,7 +275,10 @@ const scrapedDate = computed(() =>
       class="mb-8 pt-5 border-t-2 border-white/40 first:border-t-0 first:pt-0"
     >
       <h2 class="text-2xl font-bold mb-3">{{ group.tier }}</h2>
-      <div class="grid gap-4 grid-cols-1 sm:grid-cols-2 xl:grid-cols-3">
+      <div
+        class="grid gap-4 grid-cols-1 sm:grid-cols-2"
+        :class="usePortraits ? '2xl:grid-cols-4 xl:grid-cols-3' : 'xl:grid-cols-3'"
+      >
         <section
           v-for="roleGroup in group.roles"
           :key="roleGroup.role"
@@ -275,7 +287,14 @@ const scrapedDate = computed(() =>
           <h3 class="font-semibold mb-3">
             {{ $t(`character-tier-role-${roleGroup.role}`) }}
           </h3>
-          <div class="grid gap-2 grid-cols-2">
+          <div
+            class="grid gap-2"
+            :class="
+              usePortraits
+                ? 'grid-cols-[repeat(auto-fill,minmax(10rem,1fr))]'
+                : 'grid-cols-2'
+            "
+          >
             <div
               v-for="entry in roleGroup.characters"
               :key="entry.character.slug"
@@ -290,11 +309,22 @@ const scrapedDate = computed(() =>
               :title="entry.character.name"
               @click="selectCharacter(entry.character.name, $event)"
             >
+              <ArcanistPortraitCard
+                v-if="usePortraits && entry.arcanistId !== null"
+                :arcanist-id="entry.arcanistId"
+                :name="entry.character.name"
+                :owned="entry.owned"
+                show-name
+                :border-class="bannerBorderClass(entry.character.name)"
+              />
               <div
-                v-if="entry.arcanistId !== null"
-                class="w-12 h-12 rounded-full overflow-hidden shrink-0"
-                :class="bannerBorderClass(entry.character.name)"
+                v-else-if="entry.arcanistId !== null"
+                class="relative w-12 h-12 rounded-full overflow-hidden shrink-0"
               >
+                <div
+                  class="absolute inset-0 z-10 rounded-full pointer-events-none"
+                  :class="bannerBorderClass(entry.character.name)"
+                ></div>
                 <img
                   :src="getArcanistI0ImagePath(entry.arcanistId)"
                   :alt="entry.character.name"
@@ -307,7 +337,33 @@ const scrapedDate = computed(() =>
                 class="w-12 h-12 rounded-full bg-base-300 shrink-0"
                 :class="{ 'opacity-70': !entry.owned }"
               ></div>
-              <div class="min-w-0" :class="{ 'opacity-70': !entry.owned }">
+              <div
+                v-if="usePortraits && entry.arcanistId !== null"
+                class="min-w-0 flex flex-col gap-1"
+                :class="{ 'opacity-70': !entry.owned }"
+              >
+                <div
+                  v-if="entry.character.score !== undefined"
+                  class="text-2xl font-bold"
+                >
+                  {{
+                    selectedMode === "overall"
+                      ? entry.character.score.toFixed(1)
+                      : entry.character.score
+                  }}
+                </div>
+                <div
+                  v-for="tag in entry.character.tags
+                    .split(',')
+                    .map((t) => t.trim())
+                    .filter(Boolean)"
+                  :key="tag"
+                  class="text-sm leading-tight"
+                >
+                  {{ tag }}
+                </div>
+              </div>
+              <div v-else class="min-w-0" :class="{ 'opacity-70': !entry.owned }">
                 <div class="text-sm font-medium truncate">
                   {{ entry.character.name }}
                 </div>
@@ -378,11 +434,23 @@ const scrapedDate = computed(() =>
             :key="opt.name"
             class="text-center w-16"
           >
+            <ArcanistPortraitCard
+              v-if="usePortraits && opt.arcanistId !== null"
+              class="mx-auto"
+              :arcanist-id="opt.arcanistId"
+              :name="opt.name"
+              :owned="opt.owned"
+              show-name
+              :border-class="bannerBorderClass(opt.name)"
+            />
             <div
-              v-if="opt.arcanistId !== null"
-              class="w-16 h-16 rounded-full overflow-hidden"
-              :class="bannerBorderClass(opt.name)"
+              v-else-if="opt.arcanistId !== null"
+              class="relative w-16 h-16 rounded-full overflow-hidden"
             >
+              <div
+                class="absolute inset-0 z-10 rounded-full pointer-events-none"
+                :class="bannerBorderClass(opt.name)"
+              ></div>
               <img
                 :src="getArcanistI0ImagePath(opt.arcanistId)"
                 :alt="opt.name"
@@ -395,7 +463,11 @@ const scrapedDate = computed(() =>
               class="w-16 h-16 rounded-full bg-base-300"
               :class="{ 'opacity-30': !opt.owned }"
             ></div>
-            <div class="text-xs truncate" :class="{ 'opacity-30': !opt.owned }">
+            <div
+              v-if="!(usePortraits && opt.arcanistId !== null)"
+              class="text-xs truncate"
+              :class="{ 'opacity-30': !opt.owned }"
+            >
               {{ opt.name }}
             </div>
           </div>

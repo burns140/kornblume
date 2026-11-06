@@ -11,6 +11,8 @@ import {
   completableWithBanner,
 } from "@/utils/bannerData";
 import { SHEET_GIDS, sheetEditUrl } from "@/utils/googleSheet";
+import ArcanistPortraitCard from "@/components/arcanist/ArcanistPortraitCard.vue";
+import BorderLegend from "@/components/BorderLegend.vue";
 
 const archetypeSheetUrl = sheetEditUrl(SHEET_GIDS.archetypes);
 
@@ -20,13 +22,16 @@ const teamBorderClass = (r: ResolvedTeam) => {
   if (r.ownedCount === r.total) {
     return "border-success";
   }
-  return completableWithBanner(r) ? "border-yellow-400" : "border-transparent";
+  return completableWithBanner(r) ? "border-pink-400" : "border-transparent";
 };
 
 const dataStore = useDataStore();
 const ownershipStore = useArcanistOwnershipStore();
-const { teamsSource: selectedSource, teamsOnlyBuildable: onlyBuildable } =
-  storeToRefs(useViewPreferencesStore());
+const {
+  teamsSource: selectedSource,
+  teamsOnlyBuildable: onlyBuildable,
+  teamsPortraits: usePortraits,
+} = storeToRefs(useViewPreferencesStore());
 const archetypeLoading = ref(false);
 const archetypeError = ref("");
 
@@ -115,6 +120,10 @@ const scrapedDate = computed(() =>
         <input v-model="onlyBuildable" type="checkbox" class="checkbox" />
         {{ $t("teams-only-buildable") }}
       </label>
+      <label class="flex items-center gap-2 cursor-pointer">
+        <input v-model="usePortraits" type="checkbox" class="checkbox" />
+        {{ $t("portrait-style") }}
+      </label>
       <div
         v-if="selectedSource === 'prydwen' && dataStore.teams"
         class="text-sm opacity-70"
@@ -156,6 +165,8 @@ const scrapedDate = computed(() =>
         </button>
       </div>
     </div>
+
+    <BorderLegend card-border="team" show-banner-team />
 
     <p
       v-if="selectedSource === 'archetypes' && archetypeLoading"
@@ -213,11 +224,23 @@ const scrapedDate = computed(() =>
                         : `${opt.name} (${$t('teams-missing')})`
                     "
                   >
+                    <ArcanistPortraitCard
+                      v-if="usePortraits && opt.arcanistId !== null"
+                      class="mx-auto"
+                      :arcanist-id="opt.arcanistId"
+                      :name="opt.name"
+                      :owned="opt.owned"
+                      show-name
+                      :border-class="bannerBorderClass(opt.name)"
+                    />
                     <div
-                      v-if="opt.arcanistId !== null"
-                      class="w-16 h-16 rounded-full overflow-hidden"
-                      :class="bannerBorderClass(opt.name)"
+                      v-else-if="opt.arcanistId !== null"
+                      class="relative w-16 h-16 rounded-full overflow-hidden"
                     >
+                      <div
+                        class="absolute inset-0 z-10 rounded-full pointer-events-none"
+                        :class="bannerBorderClass(opt.name)"
+                      ></div>
                       <img
                         :src="getArcanistI0ImagePath(opt.arcanistId)"
                         :alt="opt.name"
@@ -231,6 +254,7 @@ const scrapedDate = computed(() =>
                       :class="{ 'opacity-30': !opt.owned }"
                     ></div>
                     <div
+                      v-if="!(usePortraits && opt.arcanistId !== null)"
                       class="text-xs truncate"
                       :class="{ 'opacity-30': !opt.owned }"
                     >
